@@ -925,6 +925,9 @@ function openBlockForm() {
       <span style="font-size:13px;font-weight:500">${dev.name}</span>
     </label>`).join('');
 
+  const defaultStart = tod();
+  const defaultEnd   = selDate > tod() ? selDate : tod();
+
   document.getElementById('panel-form').innerHTML = `
     <div class="form-box curric">
       <div class="form-title" style="color:var(--amber-dk)">Add curricular block</div>
@@ -933,23 +936,23 @@ function openBlockForm() {
       <input type="text" id="blk-title" placeholder="e.g. Year 2 Cardiac Skills Lab">
       <div class="two-col">
         <div><label class="fl">Start date</label>
-          <input type="date" id="blk-start" value="${selDate}"></div>
+          <input type="date" id="blk-start" value="${defaultStart}"></div>
         <div><label class="fl">End date</label>
-          <input type="date" id="blk-end" value="${selDate}" min="${selDate}"></div>
+          <input type="date" id="blk-end" value="${defaultEnd}"></div>
       </div>
       <label class="fl">Time slot *</label>
       <div class="slot-opts">${buildSlotOpts('blk', 'Full')}</div>
       <label class="fl">Devices to block *</label>
       <div>${cbHtml}</div>
       <div class="btn-row">
-        <button class="btn btn-amber" onclick="submitBlock()">Save curricular block</button>
+        <button class="btn btn-amber" onclick="submitBlock(false)">Save curricular block</button>
         <button class="btn" onclick="cancelForm()">Cancel</button>
       </div>
     </div>`;
   document.getElementById('panel-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-function submitBlock() {
+function submitBlock(forceOverride) {
   const title = document.getElementById('blk-title')?.value.trim();
   const start = document.getElementById('blk-start')?.value;
   const end   = document.getElementById('blk-end')?.value;
@@ -957,6 +960,7 @@ function submitBlock() {
   const sel   = [...document.querySelectorAll('.form-box.curric input[type=checkbox]:checked')]
                   .map(i => parseInt(i.value));
   const msg = document.getElementById('blk-msg');
+
   if (!title || !start || !end || !sel.length) {
     msg.innerHTML = '<div class="msg msg-err">Please fill in all fields and select at least one device.</div>';
     return;
@@ -964,6 +968,59 @@ function submitBlock() {
   if (end < start) {
     msg.innerHTML = '<div class="msg msg-err">End date must be on or after start date.</div>';
     return;
+  }
+
+  // Find any conflicting student reservations
+  const conflictingRecs = [];
+  sel.forEach(devId => {
+    const devName = DEVICES.find(d => d.id === devId).name;
+    let d = new Date(start + 'T00:00:00');
+    const endD = new Date(end + 'T00:00:00');
+    while (d <= endD) {
+      const ds = localDateStr(d.getFullYear(), d.getMonth(), d.getDate());
+      records.forEach(r => {
+        if (r.status !== 'returned' &&
+            r.deviceIds.includes(devId) &&
+            r.date === ds &&
+            slotsConflict(slot, r.slot) &&
+            !conflictingRecs.find(c => c.id === r.id)) {
+          conflictingRecs.push({ ...r, _devName: devName, _ds: ds });
+        }
+      });
+      d.setDate(d.getDate() + 1);
+    }
+  });
+
+  // If conflicts exist and not already confirmed, show override prompt
+  if (conflictingRecs.length && !forceOverride) {
+    const list = conflictingRecs.map(r =>
+      `<div style="margin:3px 0">⚠ <strong>${r._devName}</strong> on ${fmtS(r._ds)} (${fmtSlot(r.slot)}) — reserved by ${r.studentName} (${r.email})</div>`
+    ).join('');
+    msg.innerHTML = `
+      <div class="msg msg-err">
+        <strong>Conflicts with existing student reservations:</strong>
+        <div style="margin-top:6px">${list}</div>
+        <div style="margin-top:10px">Saving this block will remove the conflicting reservations. Do you want to proceed?</div>
+        <div style="margin-top:8px;display:flex;gap:8px">
+          <button class="btn btn-sm" style="background:#A32D2D;color:#fff;border-color:#A32D2D"
+            onclick="submitBlock(true)">Yes, remove reservations and save block</button>
+          <button class="btn btn-sm" onclick="document.getElementById('blk-msg').innerHTML=''">Cancel</button>
+        </div>
+      </div>`;
+    return;
+  }
+
+  // Remove conflicting reservations if overriding
+  if (forceOverride && conflictingRecs.length) {
+    conflictingRecs.forEach(r => {
+      const idx = records.findIndex(rec => rec.id === r.id);
+      if (idx !== -1) {
+        records[idx].status    = 'returned';
+        records[idx].returnDate = tod();
+        records[idx].condition  = 'Cancelled — curricular block: ' + title;
+        persistReturnRecord(records[idx].id, records[idx].returnDate, records[idx].condition);
+      }
+    });
   }
 
   const blk = {
@@ -981,6 +1038,7 @@ function submitBlock() {
   document.getElementById('panel-form').innerHTML = `
     <div class="msg msg-warn" style="margin-top:10px">
       <strong>Block saved.</strong> ${names} · "${title}" · ${fmtS(start)}–${fmtS(end)} · ${fmtSlot(slot)}.
+      ${forceOverride && conflictingRecs.length ? `<div style="margin-top:4px;font-size:12px">${conflictingRecs.length} student reservation(s) removed.</div>` : ''}
     </div>`;
   renderDayPanel();
 }
