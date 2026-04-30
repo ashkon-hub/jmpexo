@@ -247,9 +247,9 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 
 <!-- Nav -->
 <div class="nav">
-  <button class="nav-btn active" onclick="showView('calendar')">Calendar</button>
+  <button class="nav-btn active" onclick="showView('calendar')">Reservation Calendar</button>
   <button class="nav-btn" onclick="showView('return')">Return device</button>
-  <button class="nav-btn" onclick="showView('log')">Records</button>
+  <button class="nav-btn" id="records-tab" onclick="showView('log')" style="display:none">Records</button>
 </div>
 
 <!-- ── CALENDAR VIEW ── -->
@@ -495,20 +495,21 @@ function toggleAdmin() {
     document.getElementById('admin-btn').textContent  = 'Admin mode';
     document.getElementById('admin-btn').className    = 'btn btn-sm';
     document.getElementById('admin-badge').style.display = 'none';
-    if (selDate) renderDayPanel();
-    renderLog();
+    document.getElementById('records-tab').style.display = 'none';
+    // If currently on Records, switch to Calendar
+    if (document.getElementById('view-log').classList.contains('active'))
+      showView('calendar');
+    else if (selDate) renderDayPanel();
     return;
   }
   const pwd = prompt('Enter admin password:');
-  if (pwd === null) return;           // cancelled
-  if (pwd !== ADMIN_PASSWORD) {
-    alert('Incorrect password.');
-    return;
-  }
+  if (pwd === null) return;
+  if (pwd !== ADMIN_PASSWORD) { alert('Incorrect password.'); return; }
   adminMode = true;
   document.getElementById('admin-btn').textContent  = 'Exit admin';
   document.getElementById('admin-btn').className    = 'btn btn-sm btn-amber';
   document.getElementById('admin-badge').style.display = 'block';
+  document.getElementById('records-tab').style.display = 'block';
   if (selDate) renderDayPanel();
   renderLog();
 }
