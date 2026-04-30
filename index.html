@@ -217,7 +217,7 @@ textarea { min-height: 52px; resize: vertical; }
      CONFIGURATION  (edit before deploying)
      ════════════════════════════════════════════════ -->
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJPaCy4Mwdd_WLqx3CJjgYjUN1AeQT1zzbRRJ9Aw-Eveh_3ypQbxrpPrpv9Qkbkl5Z/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrWzqGb0gmk0814ZXSFwCxPJxk7HtSaA7X7rtc-X-mDq73y3KM-19Bm7qc7WLNwUfv/exec';
 const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </script>
 <!-- ════════════════════════════════════════════════ -->
@@ -399,12 +399,10 @@ async function apiGet() {
 }
 
 async function apiPost(payload) {
-  const params = new URLSearchParams();
-  params.append('payload', JSON.stringify(payload));
-  await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    body: params,
-  });
+  const url = APPS_SCRIPT_URL + '?payload=' + encodeURIComponent(JSON.stringify(payload));
+  const res = await fetch(url);
+  const text = await res.text();
+  return JSON.parse(text);
 }
 
 async function loadData() {
