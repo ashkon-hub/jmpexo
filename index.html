@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>POCUS Device Lending</title>
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #ffffff; --bg2: #f5f5f5; --bg3: #ebebeb;
+  --border: #d8d8d8; --border2: #c4c4c4;
+  --text: #1a1a1a; --text2: #555555; --text3: #888888;
+  --blue: #1B4F8C; --blue-lt: #ddeaf9;
+  --green: #639922; --green-lt: #eaf3de; --green-dk: #3B6D11;
+  --amber: #BA7517; --amber-lt: #faeeda; --amber-dk: #854F0B;
+  --red: #E24B4A; --red-lt: #fcebeb; --red-dk: #A32D2D;
+  --radius: 8px; --radius-sm: 5px;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+body { font-family: var(--font); font-size: 14px; color: var(--text);
+  background: var(--bg2); min-height: 100vh; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+
+/* ── Setup Banner ── */
+#setup-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: var(--radius);
+  padding: 14px 16px; margin-bottom: 1.25rem; font-size: 13px; }
+#setup-banner strong { color: #856404; }
+#setup-banner code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px;
+  font-family: monospace; font-size: 12px; }
+
+/* ── Loading ── */
+#loading { text-align: center; padding: 3rem; color: var(--text2); font-size: 13px; }
+.spinner { width: 28px; height: 28px; border: 3px solid var(--bg3);
+  border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite;
+  margin: 0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Header ── */
+.app-header { display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 1rem; gap: 12px; flex-wrap: wrap; }
+.app-title { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.2; }
+.app-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
+#save-indicator { font-size: 11px; color: var(--text3); margin-top: 4px; min-height: 16px; }
+
+/* ── Stat cards ── */
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+.stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 10px 8px; text-align: center; }
+.stat-n { font-size: 24px; font-weight: 600; }
+.stat-l { font-size: 10px; color: var(--text2); margin-top: 2px; line-height: 1.3; }
+
+/* ── Nav tabs ── */
+.nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
+.nav-btn { padding: 8px 16px; border: none; background: none; cursor: pointer;
+  font-size: 13px; color: var(--text2); border-bottom: 2px solid transparent;
+  margin-bottom: -1px; font-family: var(--font); transition: color 0.12s; }
+.nav-btn.active { color: var(--text); border-bottom-color: var(--blue); font-weight: 500; }
+.nav-btn:hover:not(.active) { color: var(--text); }
+
+/* ── Views ── */
+.view { display: none; }
+.view.active { display: block; }
+
+/* ── Calendar ── */
+.cal-controls { display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.month-lbl { font-size: 15px; font-weight: 600; min-width: 148px; text-align: center; }
+.week-hdrs { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 2px; }
+.week-hdr { text-align: center; font-size: 10px; color: var(--text3); font-weight: 600;
+  padding: 4px 0; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-cell { min-height: 66px; padding: 5px; border-radius: var(--radius-sm);
+  cursor: pointer; background: var(--bg); border: 1px solid var(--border);
+  display: flex; flex-direction: column; transition: background 0.1s; }
+.cal-cell:hover:not(.om) { background: var(--blue-lt); border-color: #b0cce8; }
+.cal-cell.om { opacity: 0.22; pointer-events: none; }
+.cal-cell.past { opacity: 0.55; }
+.cal-cell.is-today { border-color: var(--blue); border-width: 1.5px; }
+.cal-cell.is-sel { background: var(--blue-lt); border-color: var(--blue); border-width: 1.5px; }
+.day-n { font-size: 11px; font-weight: 500; color: var(--text2); }
+.today-n { color: var(--blue); font-weight: 700; }
+.dev-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 6px; }
+.split-bar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; gap: 1px; }
+.sh { flex: 1; }
+.sh-av { background: var(--bg3); }
+.sh-bo { background: var(--green); }
+.sh-bl { background: var(--amber); }
+.sh-ov { background: var(--red); }
+
+/* ── Day Panel ── */
+.day-panel { background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 10px; }
+.panel-hdr { display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px; }
+.panel-title { font-size: 15px; font-weight: 600; }
+.close-btn { background: none; border: none; cursor: pointer; color: var(--text2);
+  font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
+.close-btn:hover { background: var(--bg2); }
+.drow { display: flex; align-items: flex-start; gap: 8px; padding: 9px 0;
+  border-bottom: 1px solid var(--border); }
+.drow:last-of-type { border-bottom: none; }
+.dinf { flex: 1; min-width: 0; }
+.dnm { font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+.slots-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.spill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.spill-av { background: var(--bg3); color: var(--text2); }
+.spill-bo { background: var(--green-lt); color: var(--green-dk); }
+.spill-bl { background: var(--amber-lt); color: var(--amber-dk); }
+.spill-ov { background: var(--red-lt); color: var(--red-dk); }
+
+/* ── Forms ── */
+.form-box { background: var(--bg2); border-radius: var(--radius);
+  padding: 14px 16px; margin-top: 12px; }
+.form-box.curric { background: var(--amber-lt); border: 1px solid #fac775; }
+.form-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
+label.fl { display: block; font-size: 12px; color: var(--text2); margin-bottom: 3px; margin-top: 10px; }
+label.fl:first-of-type { margin-top: 0; }
+input[type=text], input[type=email], input[type=date], select, textarea {
+  width: 100%; padding: 7px 10px; border: 1px solid var(--border2);
+  border-radius: var(--radius-sm); background: var(--bg); color: var(--text);
+  font-size: 13px; font-family: var(--font); }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
+input[readonly] { background: var(--bg3); color: var(--text2); cursor: default; }
+textarea { min-height: 52px; resize: vertical; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.slot-opts { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.slot-opt { display: flex; align-items: center; gap: 5px; padding: 6px 12px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 13px; background: var(--bg); user-select: none; }
+.slot-opt.sel { border-color: var(--blue); background: var(--blue-lt); font-weight: 500; }
+.slot-opt input { margin: 0; cursor: pointer; accent-color: var(--blue); }
+.cblbl { display: flex; align-items: center; gap: 8px; padding: 7px 9px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  margin-top: 4px; cursor: pointer; font-size: 13px; background: var(--bg); }
+.cblbl.sel { border-color: var(--blue); background: var(--blue-lt); }
+.cblbl.dis { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+.cblbl input { margin: 0; cursor: pointer; accent-color: var(--blue); }
+.cond-group { margin-top: 10px; }
+.cond-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+.cond-opt { display: flex; align-items: center; gap: 7px; padding: 5px 0;
+  cursor: pointer; font-size: 13px; }
+.cond-opt input { margin: 0; cursor: pointer; accent-color: var(--blue); }
+
+/* ── Buttons ── */
+.btn { padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+  cursor: pointer; border: 1px solid var(--border2); background: var(--bg);
+  color: var(--text); font-family: var(--font); white-space: nowrap; }
+.btn:hover { background: var(--bg2); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-primary { background: var(--blue); color: #fff; border-color: var(--blue); }
+.btn-primary:hover { opacity: 0.88; background: var(--blue); }
+.btn-amber { background: var(--amber-lt); color: var(--amber-dk); border-color: #fac775; }
+.btn-amber:hover { background: #fac775; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-row { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.admin-btn-wrap { display: flex; flex-direction: column; align-items: flex-end; }
+.admin-mode-badge { font-size: 10px; color: var(--amber-dk); margin-top: 3px; font-weight: 500; }
+
+/* ── Messages ── */
+.msg { padding: 9px 13px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 8px; }
+.msg-ok { background: var(--green-lt); color: var(--green-dk); border: 1px solid #c0dd97; }
+.msg-err { background: var(--red-lt); color: var(--red-dk); border: 1px solid #f7c1c1; }
+.msg-warn { background: var(--amber-lt); color: var(--amber-dk); border: 1px solid #fac775; }
+
+/* ── Charger notice ── */
+.charger-notice { display: flex; align-items: flex-start; gap: 10px;
+  background: #e6f1fb; border: 1px solid #b5d4f4; border-radius: var(--radius);
+  padding: 12px 14px; margin-bottom: 14px; }
+.charger-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+
+/* ── Card ── */
+.card { background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 10px; }
+.section-lbl { font-size: 11px; font-weight: 600; color: var(--text3);
+  text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+
+/* ── Legend ── */
+.legend { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--text2); }
+.legend-bar { width: 22px; height: 5px; border-radius: 2px; }
+
+/* ── Log / Records ── */
+.log-controls { display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px; }
+.logitem { padding: 9px 0; border-bottom: 1px solid var(--border);
+  display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
+.logitem:last-child { border-bottom: none; }
+.dtag { display: inline-block; font-size: 11px; background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; margin: 1px; }
+.badge { display: inline-block; padding: 2px 7px; border-radius: 10px;
+  font-size: 11px; font-weight: 500; }
+.badge-active { background: var(--green-lt); color: var(--green-dk); }
+.badge-overdue { background: var(--red-lt); color: var(--red-dk); }
+.badge-returned { background: var(--bg3); color: var(--text2); }
+.badge-block { background: var(--amber-lt); color: var(--amber-dk); }
+
+/* ── Return tab ── */
+.retitem { display: flex; align-items: flex-start; gap: 10px; padding: 12px 0;
+  border-bottom: 1px solid var(--border); }
+.retitem:last-child { border-bottom: none; }
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<!-- ════════════════════════════════════════════════
+     CONFIGURATION  (edit before deploying)
+     ════════════════════════════════════════════════ -->
+<script>
+const APPS_SCRIPT_URL = '';         // ← Paste your Web App URL here
+const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
+</script>
+<!-- ════════════════════════════════════════════════ -->
+
+<div id="setup-banner" style="display:none">
+  ⚙️ <strong>Setup required:</strong> Open this HTML file in a text editor,
+  find the <code>APPS_SCRIPT_URL</code> line near the top, and paste your
+  Google Apps Script Web App URL. See the <code>pocus_apps_script.js</code>
+  file for full instructions.
+</div>
+
+<!-- Header -->
+<div class="app-header">
+  <div>
+    <div class="app-title">POCUS Device Lending</div>
+    <div class="app-sub">Exo Iris handheld ultrasound · 4 units · morning &amp; afternoon slots</div>
+    <div id="save-indicator"></div>
+  </div>
+  <div class="admin-btn-wrap">
+    <button id="admin-btn" class="btn btn-sm" onclick="toggleAdmin()">Admin mode</button>
+    <div id="admin-badge" class="admin-mode-badge" style="display:none">🔓 Admin active</div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" id="stat-grid">
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">units with open slots today</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">active reservations</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">overdue</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">curricular blocks</div></div>
+</div>
+
+<!-- Nav -->
+<div class="nav">
+  <button class="nav-btn active" onclick="showView('calendar')">Calendar</button>
+  <button class="nav-btn" onclick="showView('return')">Return device</button>
+  <button class="nav-btn" onclick="showView('log')">Records</button>
+</div>
+
+<!-- ── CALENDAR VIEW ── -->
+<div id="view-calendar" class="view active">
+  <div class="cal-controls">
+    <div class="cal-nav">
+      <button class="btn btn-sm" onclick="changeMonth(-1)">&#8592;</button>
+      <span class="month-lbl" id="month-lbl"></span>
+      <button class="btn btn-sm" onclick="changeMonth(1)">&#8594;</button>
+      <button class="btn btn-sm" onclick="goToday()">Today</button>
+    </div>
+    <select id="jump-sel" onchange="jumpToMonth()" style="width:auto;font-size:12px;padding:5px 8px">
+      <option value="">Jump to month…</option>
+    </select>
+  </div>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    Loading data from Google Sheets…
+  </div>
+
+  <div id="cal-wrap" style="display:none">
+    <div class="week-hdrs">
+      <div class="week-hdr">Sun</div><div class="week-hdr">Mon</div><div class="week-hdr">Tue</div>
+      <div class="week-hdr">Wed</div><div class="week-hdr">Thu</div><div class="week-hdr">Fri</div>
+      <div class="week-hdr">Sat</div>
+    </div>
+    <div id="cal-grid" class="cal-grid"></div>
+    <div id="day-panel" style="display:none" class="day-panel"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-bar" style="background:var(--bg3)"></div>Available</div>
+      <div class="legend-item"><div class="legend-bar" style="background:var(--green)"></div>Student reservation</div>
+      <div class="legend-item"><div class="legend-bar" style="background:var(--amber)"></div>Curricular block</div>
+      <div class="legend-item"><div class="legend-bar" style="background:var(--red)"></div>Overdue</div>
+      <div class="legend-item" style="font-style:italic">Each bar: left half = AM · right half = PM</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RETURN VIEW ── -->
+<div id="view-return" class="view">
+  <div class="card">
+    <div class="section-lbl">Return a device</div>
+    <div class="charger-notice">
+      <div class="charger-icon">⚡</div>
+      <div>
+        <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:3px">
+          Place device in its charging dock before leaving
+        </div>
+        <div style="font-size:12px;color:#185FA5">
+          After returning the Exo Iris unit, plug it into the dedicated charger
+          in the storage cabinet so it is ready for the next student.
+        </div>
+      </div>
+    </div>
+    <div id="ret-msg"></div>
+    <label class="fl" style="margin-top:0">Your email address</label>
+    <input type="email" id="ret-email" placeholder="Email used when you made your reservation">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="lookupReturn()">Find my reservations →</button>
+    </div>
+    <div id="ret-results" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ── LOG VIEW ── -->
+<div id="view-log" class="view">
+  <div class="log-controls">
+    <div class="section-lbl" style="margin:0">All records</div>
+    <select id="log-filter" onchange="renderLog()" style="width:auto;font-size:12px;padding:5px 8px">
+      <option value="all">All</option>
+      <option value="active">Active</option>
+      <option value="overdue">Overdue</option>
+      <option value="returned">Returned</option>
+      <option value="blocks">Curricular blocks</option>
+    </select>
+  </div>
+  <div class="card" style="padding:0.25rem 1.25rem">
+    <div id="log-list"><div style="text-align:center;padding:2rem;color:var(--text2)">Loading…</div></div>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONSTANTS
+// ─────────────────────────────────────────────────────────────────────────────
+const DEVICES = [
+  { id: 1, name: 'Exo Iris 1' },
+  { id: 2, name: 'Exo Iris 2' },
+  { id: 3, name: 'Exo Iris 3' },
+  { id: 4, name: 'Exo Iris 4' },
+];
+
+const MONTHS = ['January','February','March','April','May','June',
+  'July','August','September','October','November','December'];
+
+const SLOT_LABELS = { AM: 'Morning', PM: 'Afternoon', Full: 'Full day' };
+
+const COND_OPTIONS = [
+  'Good — no issues',
+  'Battery not charged',
+  'Damaged — urgent',
+  'Other functional issue',
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────────────────────────────────────
+let records   = [];
+let blocks    = [];
+let adminMode = false;
+let selDate   = null;
+let curYear   = new Date().getFullYear();
+let curMonth  = new Date().getMonth();
+let dataLoaded = false;
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DATE HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+function tds(d) { return d.toISOString().slice(0, 10); }
+function tod()  { return tds(new Date()); }
+function pd(s)  { return new Date(s + 'T00:00:00'); }
+function fmtS(s) {
+  return pd(s).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function fmtF(s) {
+  return pd(s).toLocaleDateString('en-US',
+    { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+function fmtSlot(s) { return SLOT_LABELS[s] || s; }
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  GOOGLE SHEETS API
+// ─────────────────────────────────────────────────────────────────────────────
+function setSaveIndicator(msg, color) {
+  const el = document.getElementById('save-indicator');
+  el.textContent = msg;
+  el.style.color = color || 'var(--text3)';
+}
+
+async function apiGet() {
+  const res = await fetch(APPS_SCRIPT_URL, { redirect: 'follow' });
+  return res.json();
+}
+
+async function apiPost(payload) {
+  await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(payload),
+    redirect: 'follow',
+  });
+}
+
+async function loadData() {
+  if (!APPS_SCRIPT_URL) {
+    document.getElementById('setup-banner').style.display = 'block';
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('cal-wrap').style.display = 'block';
+    initJump();
+    renderAll();
+    return;
+  }
+  try {
+    const data = await apiGet();
+    if (data.success) {
+      records = data.records || [];
+      blocks  = data.blocks  || [];
+      // ensure deviceIds are arrays of numbers
+      records.forEach(r => {
+        if (!Array.isArray(r.deviceIds))
+          r.deviceIds = r.deviceIds ? String(r.deviceIds).split(',').map(Number) : [];
+      });
+      blocks.forEach(b => {
+        if (!Array.isArray(b.deviceIds))
+          b.deviceIds = b.deviceIds ? String(b.deviceIds).split(',').map(Number) : [];
+      });
+    }
+  } catch (e) {
+    setSaveIndicator('⚠ Could not load data — check your URL', 'var(--red-dk)');
+  }
+  dataLoaded = true;
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('cal-wrap').style.display = 'block';
+  initJump();
+  renderAll();
+}
+
+async function persistAddRecord(rec) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'addRecord', data: rec });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+async function persistReturnRecord(id, returnDate, condition) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'returnRecord', id, returnDate, condition });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+async function persistAddBlock(blk) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'addBlock', data: blk });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+async function persistRemoveBlock(id) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'removeBlock', id });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  ADMIN MODE
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleAdmin() {
+  if (adminMode) {
+    adminMode = false;
+    document.getElementById('admin-btn').textContent  = 'Admin mode';
+    document.getElementById('admin-btn').className    = 'btn btn-sm';
+    document.getElementById('admin-badge').style.display = 'none';
+    if (selDate) renderDayPanel();
+    renderLog();
+    return;
+  }
+  const pwd = prompt('Enter admin password:');
+  if (pwd === null) return;           // cancelled
+  if (pwd !== ADMIN_PASSWORD) {
+    alert('Incorrect password.');
+    return;
+  }
+  adminMode = true;
+  document.getElementById('admin-btn').textContent  = 'Exit admin';
+  document.getElementById('admin-btn').className    = 'btn btn-sm btn-amber';
+  document.getElementById('admin-badge').style.display = 'block';
+  if (selDate) renderDayPanel();
+  renderLog();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  VIEW ROUTING
+// ─────────────────────────────────────────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  ['calendar', 'return', 'log'].forEach((n, i) => {
+    if (n === name) document.querySelectorAll('.nav-btn')[i].classList.add('active');
+  });
+  if (name === 'log')      renderLog();
+  if (name === 'return')   { document.getElementById('ret-msg').innerHTML = '';
+                             document.getElementById('ret-results').innerHTML = ''; }
+  if (name === 'calendar') renderCalendar();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  AVAILABILITY LOGIC
+// ─────────────────────────────────────────────────────────────────────────────
+function getStatus(r) {
+  if (r.status === 'returned') return 'returned';
+  if (r.date < tod()) return 'overdue';
+  return 'active';
+}
+
+function slotsConflict(s1, s2) {
+  return s1 === 'Full' || s2 === 'Full' || s1 === s2;
+}
+
+function getSlotSt(devId, date, slot) {
+  const bl = blocks.find(b =>
+    b.deviceIds.includes(devId) &&
+    b.startDate <= date && b.endDate >= date &&
+    slotsConflict(b.slot, slot)
+  );
+  if (bl) return { type: 'blocked', label: bl.title, id: bl.id };
+
+  const rec = records.find(r =>
+    r.status !== 'returned' &&
+    r.deviceIds.includes(devId) &&
+    r.date === date &&
+    slotsConflict(r.slot, slot)
+  );
+  if (rec) {
+    const ov = rec.date < tod();
+    return { type: ov ? 'overdue' : 'booked', label: rec.studentName, id: rec.id };
+  }
+  return { type: 'available' };
+}
+
+function devAvailForSlot(devId, date, slotChoice) {
+  if (slotChoice === 'Full')
+    return getSlotSt(devId, date, 'AM').type === 'available' &&
+           getSlotSt(devId, date, 'PM').type === 'available';
+  return getSlotSt(devId, date, slotChoice).type === 'available';
+}
+
+function shClass(type) {
+  return 'sh sh-' + (type === 'available' ? 'av' :
+                     type === 'booked'    ? 'bo' :
+                     type === 'blocked'   ? 'bl' : 'ov');
+}
+
+function spillClass(type) {
+  return 'spill spill-' + (type === 'available' ? 'av' :
+                            type === 'booked'    ? 'bo' :
+                            type === 'blocked'   ? 'bl' : 'ov');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  STATS
+// ─────────────────────────────────────────────────────────────────────────────
+function renderStats() {
+  const t = tod();
+  const avail   = DEVICES.filter(d =>
+    devAvailForSlot(d.id, t, 'AM') || devAvailForSlot(d.id, t, 'PM')).length;
+  const active  = records.filter(r => getStatus(r) === 'active').length;
+  const overdue = records.filter(r => getStatus(r) === 'overdue').length;
+  document.getElementById('stat-grid').innerHTML = `
+    <div class="stat-card"><div class="stat-n">${avail}</div>
+      <div class="stat-l">units with open slots today</div></div>
+    <div class="stat-card"><div class="stat-n">${active}</div>
+      <div class="stat-l">active reservations</div></div>
+    <div class="stat-card"><div class="stat-n" style="${overdue > 0 ? 'color:var(--red)' : ''}">${overdue}</div>
+      <div class="stat-l">overdue</div></div>
+    <div class="stat-card"><div class="stat-n">${blocks.length}</div>
+      <div class="stat-l">curricular blocks</div></div>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CALENDAR
+// ─────────────────────────────────────────────────────────────────────────────
+function initJump() {
+  const sel = document.getElementById('jump-sel');
+  const now = new Date();
+  for (let y = now.getFullYear(); y <= now.getFullYear() + 1; y++) {
+    for (let m = 0; m < 12; m++) {
+      const o = document.createElement('option');
+      o.value = y + '-' + m;
+      o.textContent = MONTHS[m] + ' ' + y;
+      sel.appendChild(o);
+    }
+  }
+}
+
+function changeMonth(d) {
+  curMonth += d;
+  if (curMonth > 11) { curMonth = 0; curYear++; }
+  if (curMonth < 0)  { curMonth = 11; curYear--; }
+  selDate = null;
+  document.getElementById('day-panel').style.display = 'none';
+  renderCalendar();
+}
+
+function goToday() {
+  const n = new Date();
+  curYear = n.getFullYear(); curMonth = n.getMonth();
+  selDate = null;
+  document.getElementById('day-panel').style.display = 'none';
+  renderCalendar();
+}
+
+function jumpToMonth() {
+  const v = document.getElementById('jump-sel').value;
+  if (!v) return;
+  const [y, m] = v.split('-').map(Number);
+  curYear = y; curMonth = m; selDate = null;
+  document.getElementById('day-panel').style.display = 'none';
+  document.getElementById('jump-sel').value = '';
+  renderCalendar();
+}
+
+function renderCalendar() {
+  document.getElementById('month-lbl').textContent = MONTHS[curMonth] + ' ' + curYear;
+  const first   = new Date(curYear, curMonth, 1).getDay();
+  const dim     = new Date(curYear, curMonth + 1, 0).getDate();
+  const prevDim = new Date(curYear, curMonth, 0).getDate();
+  const t = tod();
+  const cells = [];
+  for (let i = first - 1; i >= 0; i--)
+    cells.push({ d: prevDim - i, m: curMonth - 1, y: curYear, other: true });
+  for (let d = 1; d <= dim; d++)
+    cells.push({ d, m: curMonth, y: curYear, other: false });
+  let nd = 1;
+  while (cells.length < 35 || cells.length % 7 !== 0)
+    cells.push({ d: nd++, m: curMonth + 1, y: curYear, other: true });
+
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  cells.forEach(c => {
+    const ds = new Date(c.y, c.m, c.d).toISOString().slice(0, 10);
+    const isToday = ds === t, isSel = ds === selDate, isPast = ds < t;
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' +
+      (c.other ? ' om' : '') +
+      (isToday ? ' is-today' : '') +
+      (isSel ? ' is-sel' : '') +
+      (isPast && !c.other && !isToday ? ' past' : '');
+
+    const dn = document.createElement('div');
+    dn.className = 'day-n' + (isToday ? ' today-n' : '');
+    dn.textContent = c.d;
+    cell.appendChild(dn);
+
+    if (!c.other) {
+      const bars = document.createElement('div');
+      bars.className = 'dev-bars';
+      DEVICES.forEach(dev => {
+        const amT = getSlotSt(dev.id, ds, 'AM').type;
+        const pmT = getSlotSt(dev.id, ds, 'PM').type;
+        const bar = document.createElement('div');
+        bar.className = 'split-bar';
+        bar.innerHTML = `<div class="${shClass(amT)}"></div><div class="${shClass(pmT)}"></div>`;
+        bars.appendChild(bar);
+      });
+      cell.appendChild(bars);
+      cell.onclick = () => {
+        selDate = ds;
+        document.querySelectorAll('.cal-cell').forEach(cc => cc.classList.remove('is-sel'));
+        cell.classList.add('is-sel');
+        renderDayPanel();
+      };
+    }
+    grid.appendChild(cell);
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  DAY PANEL
+// ─────────────────────────────────────────────────────────────────────────────
+function renderDayPanel() {
+  const panel = document.getElementById('day-panel');
+  panel.style.display = 'block';
+  const isPast = selDate < tod();
+
+  let html = `<div class="panel-hdr">
+    <div class="panel-title">${fmtF(selDate)}</div>
+    <button class="close-btn" onclick="closePanel()">×</button>
+  </div><div id="pmsg"></div>`;
+
+  DEVICES.forEach(dev => {
+    const amSt = getSlotSt(dev.id, selDate, 'AM');
+    const pmSt = getSlotSt(dev.id, selDate, 'PM');
+
+    function pill(st, slotLabel) {
+      let text = slotLabel + ': ';
+      if (st.type === 'available') text += 'Available';
+      else if (st.type === 'booked')  text += st.label;
+      else if (st.type === 'blocked') text += st.label;
+      else text += 'Overdue (' + st.label + ')';
+      return `<span class="${spillClass(st.type)}">${text}</span>`;
+    }
+
+    let adminBtns = '';
+    if (adminMode) {
+      if (amSt.type === 'blocked' || pmSt.type === 'blocked') {
+        const blkId = (amSt.type === 'blocked' ? amSt : pmSt).id;
+        adminBtns = `<button class="btn btn-sm" style="margin-top:4px"
+          onclick="removeBlockAction('${blkId}')">Remove block</button>`;
+      } else if (amSt.type === 'booked' || amSt.type === 'overdue' ||
+                 pmSt.type === 'booked' || pmSt.type === 'overdue') {
+        const recId = (amSt.type !== 'available' ? amSt : pmSt).id;
+        adminBtns = `<button class="btn btn-sm" style="margin-top:4px"
+          onclick="adminMarkReturned('${recId}')">Mark returned</button>`;
+      }
+    }
+
+    html += `<div class="drow">
+      <div class="dinf">
+        <div class="dnm">${dev.name}</div>
+        <div class="slots-row">${pill(amSt,'Morning')}${pill(pmSt,'Afternoon')}</div>
+        ${adminBtns}
+      </div>
+    </div>`;
+  });
+
+  const hasAvail = DEVICES.some(d =>
+    devAvailForSlot(d.id, selDate, 'AM') || devAvailForSlot(d.id, selDate, 'PM'));
+
+  if (!isPast) {
+    html += `<div class="btn-row">`;
+    if (hasAvail)
+      html += `<button class="btn btn-primary btn-sm" onclick="openRequestForm()">
+        Reserve a device for this date →</button>`;
+    if (adminMode)
+      html += `<button class="btn btn-amber btn-sm" onclick="openBlockForm()">
+        Add curricular block →</button>`;
+    if (!hasAvail && !adminMode)
+      html += `<span style="font-size:12px;color:var(--text2)">All slots are booked or blocked.</span>`;
+    html += `</div>`;
+  } else {
+    html += `<div style="margin-top:8px;font-size:12px;color:var(--text2)">
+      Past date — shown for reference.</div>`;
+  }
+
+  html += `<div id="panel-form"></div>`;
+  panel.innerHTML = html;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closePanel() {
+  selDate = null;
+  document.getElementById('day-panel').style.display = 'none';
+  document.querySelectorAll('.cal-cell').forEach(c => c.classList.remove('is-sel'));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RESERVATION FORM
+// ─────────────────────────────────────────────────────────────────────────────
+function buildSlotOpts(prefix, defaultSlot) {
+  return ['AM', 'PM', 'Full'].map(s => `
+    <label class="slot-opt${s === defaultSlot ? ' sel' : ''}"
+      onclick="selectSlot(this,'${prefix}')">
+      <input type="radio" name="${prefix}-slot" value="${s}"
+        ${s === defaultSlot ? 'checked' : ''}> ${fmtSlot(s)}
+    </label>`).join('');
+}
+
+function selectSlot(lbl, prefix) {
+  lbl.closest('.slot-opts').querySelectorAll('.slot-opt').forEach(l => l.classList.remove('sel'));
+  lbl.classList.add('sel');
+  if (prefix === 'req') setTimeout(updateReqDevices, 10);
+}
+
+function getSelectedSlot(prefix) {
+  const checked = document.querySelector(`input[name="${prefix}-slot"]:checked`);
+  return checked ? checked.value : 'AM';
+}
+
+function openRequestForm() {
+  let cbHtml = '';
+  DEVICES.forEach(dev => {
+    const avail = devAvailForSlot(dev.id, selDate, 'AM');
+    cbHtml += `<label class="cblbl${avail ? '' : ' dis'}" id="cbl-${dev.id}">
+      <input type="checkbox" value="${dev.id}" ${avail ? '' : 'disabled'}
+        onchange="this.closest('label').classList.toggle('sel',this.checked)">
+      <div>
+        <div style="font-size:13px;font-weight:500">${dev.name}</div>
+        <div id="cbl-sub-${dev.id}" style="font-size:11px;color:var(--text2)">
+          ${avail ? '' : 'Not available this slot'}</div>
+      </div>
+    </label>`;
+  });
+
+  document.getElementById('panel-form').innerHTML = `
+    <div class="form-box">
+      <div class="form-title">Reserve a device</div>
+      <div id="req-msg"></div>
+      <div class="two-col">
+        <div>
+          <label class="fl" style="margin-top:0">Student name *</label>
+          <input type="text" id="req-name" placeholder="Full name">
+        </div>
+        <div>
+          <label class="fl" style="margin-top:0">Email *</label>
+          <input type="email" id="req-email" placeholder="your@email.edu">
+        </div>
+      </div>
+      <label class="fl">Date</label>
+      <input type="date" id="req-date" value="${selDate}" readonly>
+      <label class="fl">Time slot *</label>
+      <div class="slot-opts">${buildSlotOpts('req', 'AM')}</div>
+      <label class="fl">Device(s) *</label>
+      <div id="req-devices">${cbHtml}</div>
+      <label class="fl">Purpose (optional)</label>
+      <textarea id="req-purpose" placeholder="e.g. cardiac self-practice, workshop prep…"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="submitRequest()">Confirm reservation</button>
+        <button class="btn" onclick="cancelForm()">Cancel</button>
+      </div>
+    </div>`;
+
+  document.querySelectorAll('.slot-opt').forEach(l => {
+    l.addEventListener('click', () => setTimeout(updateReqDevices, 10));
+  });
+  document.getElementById('panel-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function updateReqDevices() {
+  const slot = getSelectedSlot('req');
+  DEVICES.forEach(dev => {
+    const lbl = document.getElementById('cbl-' + dev.id);
+    const inp = lbl && lbl.querySelector('input');
+    const sub = document.getElementById('cbl-sub-' + dev.id);
+    if (!lbl || !inp) return;
+    const avail = devAvailForSlot(dev.id, selDate, slot);
+    lbl.classList.toggle('dis', !avail);
+    inp.disabled = !avail;
+    if (!avail) { inp.checked = false; lbl.classList.remove('sel'); }
+    if (sub) sub.textContent = avail ? '' : 'Not available this slot';
+  });
+}
+
+function cancelForm() { document.getElementById('panel-form').innerHTML = ''; }
+
+function submitRequest() {
+  const name    = document.getElementById('req-name')?.value.trim();
+  const email   = document.getElementById('req-email')?.value.trim();
+  const slot    = getSelectedSlot('req');
+  const purpose = document.getElementById('req-purpose')?.value.trim();
+  const sel     = [...document.querySelectorAll('#req-devices input[type=checkbox]:checked')]
+                    .map(i => parseInt(i.value));
+  const msg = document.getElementById('req-msg');
+
+  if (!name || !email || !sel.length) {
+    msg.innerHTML = '<div class="msg msg-err">Please fill in all required fields and select at least one device.</div>';
+    return;
+  }
+  const conflicts = sel.filter(id => !devAvailForSlot(id, selDate, slot));
+  if (conflicts.length) {
+    msg.innerHTML = `<div class="msg msg-err">Conflict: ${conflicts.map(id =>
+      DEVICES.find(d => d.id === id).name).join(', ')} not available for the selected slot.</div>`;
+    return;
+  }
+
+  const rec = {
+    id: Date.now().toString(),
+    studentName: name,
+    email: email.toLowerCase(),
+    deviceIds: sel,
+    date: selDate,
+    slot,
+    purpose: purpose || '',
+    status: 'active',
+    createdAt: new Date().toISOString(),
+  };
+
+  records.unshift(rec);
+  renderCalendar();
+  renderStats();
+  persistAddRecord(rec);
+
+  const names = sel.map(id => DEVICES.find(d => d.id === id).name).join(', ');
+  document.getElementById('panel-form').innerHTML = `
+    <div class="msg msg-ok" style="margin-top:10px">
+      <strong>Reserved!</strong> ${names} confirmed for ${name} · ${fmtS(selDate)} · ${fmtSlot(slot)}.
+    </div>`;
+  renderDayPanel();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CURRICULAR BLOCK FORM
+// ─────────────────────────────────────────────────────────────────────────────
+function openBlockForm() {
+  const cbHtml = DEVICES.map(dev => `
+    <label class="cblbl" id="bkl-${dev.id}">
+      <input type="checkbox" value="${dev.id}"
+        onchange="this.closest('label').classList.toggle('sel',this.checked)">
+      <span style="font-size:13px;font-weight:500">${dev.name}</span>
+    </label>`).join('');
+
+  document.getElementById('panel-form').innerHTML = `
+    <div class="form-box curric">
+      <div class="form-title" style="color:var(--amber-dk)">Add curricular block</div>
+      <div id="blk-msg"></div>
+      <label class="fl" style="margin-top:0">Session title *</label>
+      <input type="text" id="blk-title" placeholder="e.g. Year 2 Cardiac Skills Lab">
+      <div class="two-col">
+        <div><label class="fl">Start date</label>
+          <input type="date" id="blk-start" value="${selDate}"></div>
+        <div><label class="fl">End date</label>
+          <input type="date" id="blk-end" value="${selDate}" min="${selDate}"></div>
+      </div>
+      <label class="fl">Time slot *</label>
+      <div class="slot-opts">${buildSlotOpts('blk', 'Full')}</div>
+      <label class="fl">Devices to block *</label>
+      <div>${cbHtml}</div>
+      <div class="btn-row">
+        <button class="btn btn-amber" onclick="submitBlock()">Save curricular block</button>
+        <button class="btn" onclick="cancelForm()">Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('panel-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function submitBlock() {
+  const title = document.getElementById('blk-title')?.value.trim();
+  const start = document.getElementById('blk-start')?.value;
+  const end   = document.getElementById('blk-end')?.value;
+  const slot  = getSelectedSlot('blk');
+  const sel   = [...document.querySelectorAll('.form-box.curric input[type=checkbox]:checked')]
+                  .map(i => parseInt(i.value));
+  const msg = document.getElementById('blk-msg');
+  if (!title || !start || !end || !sel.length) {
+    msg.innerHTML = '<div class="msg msg-err">Please fill in all fields and select at least one device.</div>';
+    return;
+  }
+  if (end < start) {
+    msg.innerHTML = '<div class="msg msg-err">End date must be on or after start date.</div>';
+    return;
+  }
+
+  const blk = {
+    id: 'b' + Date.now(),
+    title, deviceIds: sel, startDate: start, endDate: end, slot,
+    createdAt: new Date().toISOString(),
+  };
+
+  blocks.unshift(blk);
+  renderCalendar();
+  renderStats();
+  persistAddBlock(blk);
+
+  const names = sel.map(id => DEVICES.find(d => d.id === id).name).join(', ');
+  document.getElementById('panel-form').innerHTML = `
+    <div class="msg msg-warn" style="margin-top:10px">
+      <strong>Block saved.</strong> ${names} · "${title}" · ${fmtS(start)}–${fmtS(end)} · ${fmtSlot(slot)}.
+    </div>`;
+  renderDayPanel();
+}
+
+function removeBlockAction(id) {
+  if (!confirm('Remove this curricular block?')) return;
+  blocks = blocks.filter(b => b.id !== id);
+  persistRemoveBlock(id);
+  renderCalendar();
+  renderStats();
+  renderDayPanel();
+}
+
+function adminMarkReturned(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  r.status     = 'returned';
+  r.returnDate = tod();
+  r.condition  = 'Logged by admin';
+  persistReturnRecord(id, r.returnDate, r.condition);
+  renderCalendar();
+  renderStats();
+  renderDayPanel();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RETURN FLOW
+// ─────────────────────────────────────────────────────────────────────────────
+function buildCondHtml(recId) {
+  let html = `<div class="cond-group"><div class="cond-lbl">Device condition</div>`;
+  COND_OPTIONS.forEach((opt, i) => {
+    html += `<label class="cond-opt">
+      <input type="radio" name="cond-${recId}" value="${opt}" ${i === 0 ? 'checked' : ''}> ${opt}
+    </label>`;
+  });
+  html += `<div id="other-box-${recId}" style="margin-top:6px;display:none">
+    <textarea id="other-txt-${recId}" placeholder="Please describe the issue…"
+      style="min-height:44px"></textarea>
+  </div></div>`;
+  return html;
+}
+
+function watchCond(recId) {
+  document.querySelectorAll(`input[name="cond-${recId}"]`).forEach(r => {
+    r.addEventListener('change', () => {
+      const ob = document.getElementById('other-box-' + recId);
+      if (ob) ob.style.display = r.value === 'Other functional issue' ? 'block' : 'none';
+    });
+  });
+}
+
+function lookupReturn() {
+  const email = document.getElementById('ret-email').value.trim().toLowerCase();
+  const msg   = document.getElementById('ret-msg');
+  const res   = document.getElementById('ret-results');
+  if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
+
+  const active = records.filter(r => r.email === email && r.status !== 'returned');
+  if (!active.length) {
+    msg.innerHTML = '<div class="msg msg-warn">No active reservations found for that email.</div>';
+    res.innerHTML = '';
+    return;
+  }
+  msg.innerHTML = '';
+  let html = '<div class="section-lbl">Your active reservations</div>';
+  active.forEach(r => {
+    const st    = getStatus(r);
+    const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+    html += `<div class="retitem">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${names}</div>
+        <div style="font-size:11px;color:${st === 'overdue' ? 'var(--red)' : 'var(--text2)'};margin-top:2px">
+          ${fmtS(r.date)} · ${fmtSlot(r.slot)}${st === 'overdue' ? ' — OVERDUE' : ''}</div>
+        ${buildCondHtml(r.id)}
+      </div>
+      <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin-top:2px"
+        onclick="doReturn('${r.id}')">Return</button>
+    </div>`;
+  });
+  res.innerHTML = html;
+  active.forEach(r => watchCond(r.id));
+}
+
+function doReturn(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  const checked = document.querySelector(`input[name="cond-${id}"]:checked`);
+  let cond = checked ? checked.value : 'Good — no issues';
+  if (cond === 'Other functional issue') {
+    const txt = document.getElementById('other-txt-' + id)?.value.trim();
+    if (txt) cond = 'Other functional issue: ' + txt;
+  }
+  r.status = 'returned'; r.returnDate = tod(); r.condition = cond;
+  persistReturnRecord(id, r.returnDate, cond);
+  renderCalendar();
+  renderStats();
+
+  const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+  document.getElementById('ret-msg').innerHTML = `
+    <div class="msg msg-ok">
+      <strong>Return logged!</strong> ${names} returned. Condition: ${cond}.
+      Remember to place the device in its charging dock — thank you!
+    </div>`;
+  lookupReturn();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  RECORDS LOG
+// ─────────────────────────────────────────────────────────────────────────────
+function renderLog() {
+  const filter = document.getElementById('log-filter')?.value || 'all';
+  let items = [];
+
+  if (filter === 'blocks') {
+    items = blocks.map(b => ({ type: 'block', data: b, ts: b.createdAt }));
+  } else {
+    const recs = records
+      .filter(r => filter === 'all' || getStatus(r) === filter)
+      .map(r => ({ type: 'rec', data: r, ts: r.createdAt }));
+    items = filter === 'all'
+      ? [...recs, ...blocks.map(b => ({ type: 'block', data: b, ts: b.createdAt }))]
+          .sort((a, b) => b.ts > a.ts ? 1 : -1)
+      : recs;
+  }
+
+  const list = document.getElementById('log-list');
+  if (!items.length) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text2);font-size:13px">No records found.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(item => {
+    if (item.type === 'block') {
+      const b = item.data;
+      const names = b.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name || '').filter(Boolean);
+      const rm = adminMode
+        ? `<button class="btn btn-sm" onclick="removeBlockAction('${b.id}');renderLog()">Remove</button>` : '';
+      return `<div class="logitem">
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+            <span style="font-weight:600;font-size:13px">${b.title}</span>
+            <span class="badge badge-block">curricular block</span>
+          </div>
+          <div>${names.map(n => `<span class="dtag">${n}</span>`).join('')}</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--text2)">
+          <div>${fmtS(b.startDate)}${b.startDate !== b.endDate ? '–' + fmtS(b.endDate) : ''} · ${fmtSlot(b.slot)}</div>
+          <div style="margin-top:6px">${rm}</div>
+        </div>
+      </div>`;
+    } else {
+      const r  = item.data;
+      const st = getStatus(r);
+      const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name || '').filter(Boolean);
+      const bc = st === 'active' ? 'badge-active' : st === 'overdue' ? 'badge-overdue' : 'badge-returned';
+      const ab = adminMode && st !== 'returned'
+        ? `<button class="btn btn-sm" onclick="adminMarkReturned('${r.id}');renderLog()">Mark returned</button>` : '';
+      return `<div class="logitem">
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+            <span style="font-weight:600;font-size:13px">${r.studentName}</span>
+            <span class="badge ${bc}">${st}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:3px">${r.email}</div>
+          <div>${names.map(n => `<span class="dtag">${n}</span>`).join('')}</div>
+          ${r.purpose ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${r.purpose}</div>` : ''}
+          ${r.condition ? `<div style="font-size:11px;color:var(--text2);margin-top:1px">Condition: ${r.condition}</div>` : ''}
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--text2)">
+          <div>${fmtS(r.date)} · ${fmtSlot(r.slot)}</div>
+          ${r.returnDate ? `<div>returned ${fmtS(r.returnDate)}</div>` : ''}
+          <div style="margin-top:6px">${ab}</div>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────────────────────────────────────
+function renderAll() { renderCalendar(); renderStats(); renderLog(); }
+loadData();
+</script>
+</body>
+</html>
