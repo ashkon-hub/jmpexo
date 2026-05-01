@@ -980,11 +980,11 @@ function submitBlock(forceOverride) {
       const ds = localDateStr(d.getFullYear(), d.getMonth(), d.getDate());
       records.forEach(r => {
         if (r.status !== 'returned' &&
-            r.deviceIds.includes(devId) &&
-            r.date === ds &&
+            r.deviceIds.map(Number).includes(Number(devId)) &&
+            String(r.date).slice(0, 10) === ds &&
             slotsConflict(slot, r.slot) &&
             !conflictingRecs.find(c => c.id === r.id)) {
-          conflictingRecs.push({ ...r, _devName: devName, _ds: ds });
+          conflictingRecs.push({ ...r, deviceIds: r.deviceIds.map(Number), _devName: devName, _ds: ds });
         }
       });
       d.setDate(d.getDate() + 1);
@@ -1057,7 +1057,7 @@ function adminMarkReturned(id) {
   if (!r) return;
   r.status     = 'returned';
   r.returnDate = tod();
-  r.condition  = 'Logged by admin';
+  r.condition  = 'Removed by admin';
   persistReturnRecord(id, r.returnDate, r.condition);
   renderCalendar();
   renderStats();
