@@ -425,7 +425,7 @@ function fmtF(s) {
 }
 function fmtDueTime(r) {
   const h = getDueTime(r);
-  return h === 13 ? '1:00 PM' : '8:00 PM';
+  return h === 13 ? '12:00 PM' : '6:00 PM';
 }
 
 function fmtSlot(s) { return SLOT_LABELS[s] || s; }
@@ -657,10 +657,10 @@ function showView(name) {
 // ─────────────────────────────────────────────────────────────────────────────
 function getDueTime(r) {
   // Returns the hour at which this reservation becomes overdue
-  if (r.slot === 'AM')   return 13; // 1:00 PM
-  if (r.slot === 'PM')   return 20; // 8:00 PM
-  if (r.slot === 'Full') return 20; // 8:00 PM
-  return 20;
+  if (r.slot === 'AM')   return 12; // 12:00 PM
+  if (r.slot === 'PM')   return 18; // 6:00 PM
+  if (r.slot === 'Full') return 18; // 6:00 PM
+  return 18;
 }
 
 function getStatus(r) {
@@ -890,7 +890,7 @@ function renderDayPanel() {
     function pill(st, slotLabel) {
       let text = slotLabel + ': ';
       if (st.type === 'available') text += 'Available';
-      else if (st.type === 'booked')  text += st.label + ' (due ' + (slotLabel === 'Morning' ? '1:00 PM' : '8:00 PM') + ')';
+      else if (st.type === 'booked')  text += st.label + ' (due ' + (slotLabel === 'Morning' ? '12:00 PM' : '6:00 PM') + ')';
       else if (st.type === 'blocked') text += st.label;
       else text += 'Overdue (' + st.label + ')';
       return `<span class="${spillClass(st.type)}">${text}</span>`;
