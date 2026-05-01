@@ -12,13 +12,13 @@
   --border: #d8d8d8; --border2: #c4c4c4;
   --text: #1a1a1a; --text2: #555555; --text3: #888888;
   --blue: #1B4F8C; --blue-lt: #ddeaf9;
-  --green: #639922; --green-lt: #eaf3de; --green-dk: #3B6D11;
-  --amber: #BA7517; --amber-lt: #faeeda; --amber-dk: #854F0B;
-  --red: #E24B4A; --red-lt: #fcebeb; --red-dk: #A32D2D;
+  --green: #648FFF; --green-lt: #e8eeff; --green-dk: #2b52cc;
+  --amber: #FE6100; --amber-lt: #fff0e6; --amber-dk: #b34400;
+  --red: #DC267F; --red-lt: #fce8f3; --red-dk: #9c1a59;
   --radius: 8px; --radius-sm: 5px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
-body { font-family: var(--font); font-size: 14px; color: var(--text);
+body { font-family: var(--font); font-size: 15px; color: var(--text);
   background: var(--bg2); min-height: 100vh; }
 .wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 
@@ -44,7 +44,7 @@ body { font-family: var(--font); font-size: 14px; color: var(--text);
 #save-indicator { font-size: 11px; color: var(--text3); margin-top: 4px; min-height: 16px; }
 
 /* ── Stat cards ── */
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 1rem; }
+.stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1rem; }
 .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 10px 8px; text-align: center; }
 .stat-n { font-size: 24px; font-weight: 600; }
@@ -85,9 +85,9 @@ body { font-family: var(--font); font-size: 14px; color: var(--text);
 .split-bar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; gap: 1px; }
 .sh { flex: 1; }
 .sh-av { background: var(--bg3); }
-.sh-bo { background: var(--green); }
-.sh-bl { background: var(--amber); }
-.sh-ov { background: var(--red); }
+.sh-bo { background: #648FFF; }
+.sh-bl { background: #FE6100; }
+.sh-ov { background: #DC267F; }
 
 /* ── Day Panel ── */
 .day-panel { background: var(--bg); border: 1px solid var(--border);
@@ -192,7 +192,8 @@ textarea { min-height: 52px; resize: vertical; }
   border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; margin: 1px; }
 .badge { display: inline-block; padding: 2px 7px; border-radius: 10px;
   font-size: 11px; font-weight: 500; }
-.badge-active { background: var(--green-lt); color: var(--green-dk); }
+.badge-active { background: var(--blue-lt); color: var(--blue); }
+.badge-checkedout { background: var(--green-lt); color: var(--green-dk); }
 .badge-overdue { background: var(--red-lt); color: var(--red-dk); }
 .badge-returned { background: var(--bg3); color: var(--text2); }
 .badge-block { background: var(--amber-lt); color: var(--amber-dk); }
@@ -207,6 +208,9 @@ textarea { min-height: 52px; resize: vertical; }
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .two-col { grid-template-columns: 1fr; }
 }
+@media (max-width: 700px) {
+  .stat-grid { grid-template-columns: repeat(3, 1fr); }
+}
 </style>
 </head>
 <body>
@@ -217,7 +221,7 @@ textarea { min-height: 52px; resize: vertical; }
      CONFIGURATION  (edit before deploying)
      ════════════════════════════════════════════════ -->
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzgqbum3faGrZ9V_tFs4_8NdjX9W_jkwNn1438e2Z4CRZhcWyJmqEVI3-3f6X5cQ-Up/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaaT8Pef4gsvqVa2AI3KaYcFQz4V-YFHtZTP9K6NdDtgE_F2n6jonrZ0dSF4N3-X-E/exec';
 const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </script>
 <!-- ════════════════════════════════════════════════ -->
@@ -228,7 +232,7 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 <div class="app-header">
   <div>
     <div class="app-title">JMP POCUS Device Lending</div>
-    <div class="app-sub">Exo Iris handheld ultrasound · 4 units · morning &amp; afternoon slots</div>
+    <div class="app-sub">Exo Iris handheld ultrasound · 4 devices · morning &amp; afternoon time slots</div>
     <div id="save-indicator"></div>
   </div>
   <div class="admin-btn-wrap">
@@ -238,17 +242,19 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </div>
 
 <!-- Stats -->
-<div class="stat-grid" id="stat-grid">
-  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">units with open slots today</div></div>
-  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">active reservations</div></div>
+<div class="stat-grid" id="stat-grid" style="grid-template-columns:repeat(5,1fr)">
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">devices with open slots today</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">devices currently checked out</div></div>
   <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">overdue</div></div>
-  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">curricular blocks</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">student reservations this week</div></div>
+  <div class="stat-card"><div class="stat-n">—</div><div class="stat-l">curricular sessions this week</div></div>
 </div>
 
 <!-- Nav -->
 <div class="nav">
   <button class="nav-btn active" onclick="showView('calendar')">Reservation Calendar</button>
-  <button class="nav-btn" onclick="showView('return')">Return device</button>
+  <button class="nav-btn" onclick="showView('checkout')">Check Out Device</button>
+  <button class="nav-btn" onclick="showView('return')">Return Device</button>
   <button class="nav-btn" id="records-tab" onclick="showView('log')" style="display:none">Records</button>
 </div>
 
@@ -281,11 +287,26 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
     <div id="day-panel" style="display:none" class="day-panel"></div>
     <div class="legend">
       <div class="legend-item"><div class="legend-bar" style="background:var(--bg3)"></div>Available</div>
-      <div class="legend-item"><div class="legend-bar" style="background:var(--green)"></div>Student reservation</div>
-      <div class="legend-item"><div class="legend-bar" style="background:var(--amber)"></div>Curricular block</div>
-      <div class="legend-item"><div class="legend-bar" style="background:var(--red)"></div>Overdue</div>
+      <div class="legend-item"><div class="legend-bar" style="background:#648FFF"></div>Student reservation</div>
+      <div class="legend-item"><div class="legend-bar" style="background:#FE6100"></div>Curricular session</div>
+      <div class="legend-item"><div class="legend-bar" style="background:#DC267F"></div>Overdue</div>
       <div class="legend-item" style="font-style:italic">Each bar: left half = AM · right half = PM</div>
     </div>
+  </div>
+</div>
+
+<!-- ── CHECKOUT VIEW ── -->
+<div id="view-checkout" class="view">
+  <div class="card">
+    <div class="section-lbl">Check out a device</div>
+    <div id="co-msg"></div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Enter the email address you used when making your reservation.</p>
+    <label class="fl" style="margin-top:0">Your email address</label>
+    <input type="email" id="co-email" placeholder="Email used when you made your reservation">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="lookupCheckout()">Find my reservation →</button>
+    </div>
+    <div id="co-results" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -321,7 +342,8 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
     <div class="section-lbl" style="margin:0">All records</div>
     <select id="log-filter" onchange="renderLog()" style="width:auto;font-size:12px;padding:5px 8px">
       <option value="all">All</option>
-      <option value="active">Active</option>
+      <option value="active">Reserved</option>
+      <option value="checkedout">Checked out</option>
       <option value="overdue">Overdue</option>
       <option value="returned">Returned</option>
       <option value="blocks">Curricular blocks</option>
@@ -456,6 +478,67 @@ async function persistAddRecord(rec) {
   }
 }
 
+async function persistCheckoutRecord(id) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'checkoutRecord', id });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  CHECKOUT FLOW
+// ─────────────────────────────────────────────────────────────────────────────
+function lookupCheckout() {
+  const email = document.getElementById('co-email').value.trim().toLowerCase();
+  const msg   = document.getElementById('co-msg');
+  const res   = document.getElementById('co-results');
+  if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
+
+  const todayStr = tod();
+  const eligible = records.filter(r =>
+    r.email === email &&
+    r.status === 'active' &&
+    r.date === todayStr
+  );
+
+  if (!eligible.length) {
+    msg.innerHTML = '<div class="msg msg-warn">No reservations found for today with that email. Make sure you have a reservation for today and haven\'t already checked out.</div>';
+    res.innerHTML = '';
+    return;
+  }
+  msg.innerHTML = '';
+  let html = '<div class="section-lbl">Your reservation for today</div>';
+  eligible.forEach(r => {
+    const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+    html += `<div class="retitem">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:13px">${names}</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px">${fmtSlot(r.slot)}${r.purpose ? ' · ' + r.purpose : ''}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" style="flex-shrink:0"
+        onclick="doCheckout('${r.id}')">Confirm pick-up</button>
+    </div>`;
+  });
+  res.innerHTML = html;
+}
+
+function doCheckout(id) {
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  r.status = 'checkedout';
+  persistCheckoutRecord(id);
+  renderCalendar();
+  renderStats();
+  const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+  document.getElementById('co-msg').innerHTML = `
+    <div class="msg msg-ok"><strong>Checked out!</strong> ${names} · ${fmtSlot(r.slot)}.
+    Please return by end of your slot and complete the Return form when done.</div>`;
+  document.getElementById('co-results').innerHTML = '';
+}
+
 async function persistReturnRecord(id, returnDate, condition) {
   setSaveIndicator('Saving…');
   try {
@@ -521,12 +604,14 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['calendar', 'return', 'log'].forEach((n, i) => {
+  ['calendar', 'checkout', 'return', 'log'].forEach((n, i) => {
     if (n === name) document.querySelectorAll('.nav-btn')[i].classList.add('active');
   });
   if (name === 'log')      renderLog();
   if (name === 'return')   { document.getElementById('ret-msg').innerHTML = '';
                              document.getElementById('ret-results').innerHTML = ''; }
+  if (name === 'checkout') { document.getElementById('co-msg').innerHTML = '';
+                             document.getElementById('co-results').innerHTML = ''; }
   if (name === 'calendar') renderCalendar();
 }
 
@@ -535,7 +620,18 @@ function showView(name) {
 // ─────────────────────────────────────────────────────────────────────────────
 function getStatus(r) {
   if (r.status === 'returned') return 'returned';
-  if (r.date < tod()) return 'overdue';
+  if (r.status === 'checkedout') {
+    const now = new Date();
+    const todayStr = localDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+    const isPastDay = r.date < todayStr;
+    const isSameDay = r.date === todayStr;
+    const h = now.getHours();
+    if (isPastDay) return 'overdue';
+    if (isSameDay && r.slot === 'AM'   && h >= 13) return 'overdue';
+    if (isSameDay && r.slot === 'PM'   && h >= 21) return 'overdue';
+    if (isSameDay && r.slot === 'Full' && h >= 21) return 'overdue';
+    return 'checkedout';
+  }
   return 'active';
 }
 
@@ -586,21 +682,51 @@ function spillClass(type) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  STATS
 // ─────────────────────────────────────────────────────────────────────────────
+function isBlockActiveNow(b) {
+  const now = new Date();
+  const todayStr = localDateStr(now.getFullYear(), now.getMonth(), now.getDate());
+  if (b.startDate > todayStr || b.endDate < todayStr) return false;
+  const h = now.getHours();
+  if (b.slot === 'Full') return true;
+  if (b.slot === 'AM')   return h < 12;
+  if (b.slot === 'PM')   return h >= 12;
+  return false;
+}
+
+function getWeekBounds() {
+  const now = new Date();
+  const day = now.getDay(); // 0=Sun, 1=Mon...
+  const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1)); mon.setHours(0,0,0,0);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
+  return { mon: localDateStr(mon.getFullYear(), mon.getMonth(), mon.getDate()),
+           sun: localDateStr(sun.getFullYear(), sun.getMonth(), sun.getDate()) };
+}
+
 function renderStats() {
   const t = tod();
-  const avail   = DEVICES.filter(d =>
-    devAvailForSlot(d.id, t, 'AM') || devAvailForSlot(d.id, t, 'PM')).length;
-  const active  = records.filter(r => getStatus(r) === 'active').length;
-  const overdue = records.filter(r => getStatus(r) === 'overdue').length;
+  const { mon, sun } = getWeekBounds();
+  const avail = DEVICES.reduce((sum, d) => {
+    return sum
+      + (devAvailForSlot(d.id, t, 'AM') ? 1 : 0)
+      + (devAvailForSlot(d.id, t, 'PM') ? 1 : 0);
+  }, 0);
+  const checkedOut = records.filter(r => getStatus(r) === 'checkedout').length
+                   + blocks.filter(b => isBlockActiveNow(b)).length;
+  const overdue    = records.filter(r => getStatus(r) === 'overdue').length;
+  const weekRecs   = records.filter(r => r.date >= mon && r.date <= sun).length;
+  const weekBlocks = blocks.filter(b => b.startDate <= sun && b.endDate >= mon).length;
+  document.getElementById('stat-grid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('stat-grid').innerHTML = `
     <div class="stat-card"><div class="stat-n">${avail}</div>
-      <div class="stat-l">units with open slots today</div></div>
-    <div class="stat-card"><div class="stat-n">${active}</div>
-      <div class="stat-l">active reservations</div></div>
+      <div class="stat-l">open time slots today</div></div>
+    <div class="stat-card"><div class="stat-n">${checkedOut}</div>
+      <div class="stat-l">devices currently<br>checked out</div></div>
     <div class="stat-card"><div class="stat-n" style="${overdue > 0 ? 'color:var(--red)' : ''}">${overdue}</div>
-      <div class="stat-l">overdue</div></div>
-    <div class="stat-card"><div class="stat-n">${blocks.length}</div>
-      <div class="stat-l">curricular blocks</div></div>`;
+      <div class="stat-l">devices overdue</div></div>
+    <div class="stat-card"><div class="stat-n">${weekRecs}</div>
+      <div class="stat-l">student reservations<br>this week</div></div>
+    <div class="stat-card"><div class="stat-n">${weekBlocks}</div>
+      <div class="stat-l">curricular sessions<br>this week</div></div>`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1096,7 +1222,7 @@ function lookupReturn() {
   const res   = document.getElementById('ret-results');
   if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
 
-  const active = records.filter(r => r.email === email && r.status !== 'returned');
+  const active = records.filter(r => r.email === email && (r.status === 'checkedout' || r.status === 'active'));
   if (!active.length) {
     msg.innerHTML = '<div class="msg msg-warn">No active reservations found for that email.</div>';
     res.innerHTML = '';
@@ -1193,7 +1319,9 @@ function renderLog() {
       const r  = item.data;
       const st = getStatus(r);
       const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name || '').filter(Boolean);
-      const bc = st === 'active' ? 'badge-active' : st === 'overdue' ? 'badge-overdue' : 'badge-returned';
+      const bc = st === 'checkedout' ? 'badge-checkedout' :
+                 st === 'active'     ? 'badge-active' :
+                 st === 'overdue'    ? 'badge-overdue' : 'badge-returned';
       const ab = adminMode && st !== 'returned'
         ? `<button class="btn btn-sm" onclick="adminMarkReturned('${r.id}');renderLog()">Mark returned</button>` : '';
       return `<div class="logitem">
