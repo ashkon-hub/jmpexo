@@ -423,6 +423,11 @@ function fmtF(s) {
   return pd(s).toLocaleDateString('en-US',
     { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 }
+function fmtDueTime(r) {
+  const h = getDueTime(r);
+  return h === 13 ? '1:00 PM' : '8:00 PM';
+}
+
 function fmtSlot(s) { return SLOT_LABELS[s] || s; }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -565,7 +570,7 @@ function doCheckout(id) {
   const iphoneNote = iphoneChecked ? ` + ${iphones}` : ' (probe only — no iPhone)';
   document.getElementById('co-msg').innerHTML = `
     <div class="msg msg-ok"><strong>Checked out!</strong> ${names}${iphoneNote} · ${fmtSlot(r.slot)}.
-    Please return the device by end of your time slot and use the Return Device tab to log your return.</div>`;
+    <strong>Return by ${fmtDueTime(r)}.</strong> Please use the Return Device tab to log your return.</div>`;
   document.getElementById('co-results').innerHTML = '';
 }
 
@@ -650,6 +655,14 @@ function showView(name) {
 // ─────────────────────────────────────────────────────────────────────────────
 //  AVAILABILITY LOGIC
 // ─────────────────────────────────────────────────────────────────────────────
+function getDueTime(r) {
+  // Returns the hour at which this reservation becomes overdue
+  if (r.slot === 'AM')   return 13; // 1:00 PM
+  if (r.slot === 'PM')   return 20; // 8:00 PM
+  if (r.slot === 'Full') return 20; // 8:00 PM
+  return 20;
+}
+
 function getStatus(r) {
   if (r.status === 'returned') return 'returned';
   if (r.status === 'checkedout') {
@@ -659,9 +672,7 @@ function getStatus(r) {
     const isSameDay = r.date === todayStr;
     const h = now.getHours();
     if (isPastDay) return 'overdue';
-    if (isSameDay && r.slot === 'AM'   && h >= 13) return 'overdue';
-    if (isSameDay && r.slot === 'PM'   && h >= 21) return 'overdue';
-    if (isSameDay && r.slot === 'Full' && h >= 21) return 'overdue';
+    if (isSameDay && h >= getDueTime(r)) return 'overdue';
     return 'checkedout';
   }
   return 'active';
@@ -879,7 +890,7 @@ function renderDayPanel() {
     function pill(st, slotLabel) {
       let text = slotLabel + ': ';
       if (st.type === 'available') text += 'Available';
-      else if (st.type === 'booked')  text += st.label;
+      else if (st.type === 'booked')  text += st.label + ' (due ' + (slotLabel === 'Morning' ? '1:00 PM' : '8:00 PM') + ')';
       else if (st.type === 'blocked') text += st.label;
       else text += 'Overdue (' + st.label + ')';
       return `<span class="${spillClass(st.type)}">${text}</span>`;
@@ -1271,7 +1282,7 @@ function lookupMyRes() {
         <div style="flex:1">
           <div style="font-weight:600;font-size:15px">${names}</div>
           <div style="font-size:14px;color:var(--text2);margin-top:2px">
-            ${fmtF(r.date)} · ${fmtSlot(r.slot)}
+            ${fmtF(r.date)} · ${fmtSlot(r.slot)} · <strong>Due by ${fmtDueTime(r)}</strong>
             ${r.date === todayStr ? '<span style="color:var(--blue);font-weight:500"> · Today</span>' : ''}
           </div>
           ${r.purpose ? `<div style="font-size:13px;color:var(--text2);margin-top:2px">${r.purpose}</div>` : ''}
