@@ -756,7 +756,8 @@ function renderStats() {
   const checkedOut = records.filter(r => getStatus(r) === 'checkedout').length
                    + blocks.filter(b => isBlockActiveNow(b)).length;
   const overdue    = records.filter(r => getStatus(r) === 'overdue').length;
-  const weekRecs   = records.filter(r => r.date >= mon && r.date <= sun).length;
+  const weekRecs   = records.filter(r => r.date >= mon && r.date <= sun
+    && !(r.status === 'returned' && r.condition === 'Cancelled by student')).length;
   const weekBlocks = blocks.filter(b => b.startDate <= sun && b.endDate >= mon).length;
   document.getElementById('stat-grid').style.gridTemplateColumns = 'repeat(5,1fr)';
   document.getElementById('stat-grid').innerHTML = `
