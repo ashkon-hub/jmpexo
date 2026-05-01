@@ -253,6 +253,7 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 <!-- Nav -->
 <div class="nav">
   <button class="nav-btn active" onclick="showView('calendar')">Reservation Calendar</button>
+  <button class="nav-btn" onclick="showView('myres')">My Reservations</button>
   <button class="nav-btn" onclick="showView('checkout')">Check Out Device</button>
   <button class="nav-btn" onclick="showView('return')">Return Device</button>
   <button class="nav-btn" id="records-tab" onclick="showView('log')" style="display:none">Records</button>
@@ -307,6 +308,20 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
       <button class="btn btn-primary" onclick="lookupCheckout()">Find my reservation →</button>
     </div>
     <div id="co-results" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<!-- ── MY RESERVATIONS VIEW ── -->
+<div id="view-myres" class="view">
+  <div class="card">
+    <div class="section-lbl">My reservations</div>
+    <div id="myres-msg"></div>
+    <label class="fl" style="margin-top:0">Your email address</label>
+    <input type="email" id="myres-email" placeholder="Email used when you made your reservation">
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="lookupMyRes()">Look up my reservations →</button>
+    </div>
+    <div id="myres-results" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -619,14 +634,16 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['calendar', 'checkout', 'return', 'log'].forEach((n, i) => {
+  ['calendar', 'myres', 'checkout', 'return', 'log'].forEach((n, i) => {
     if (n === name) document.querySelectorAll('.nav-btn')[i].classList.add('active');
   });
-  if (name === 'log')      renderLog();
-  if (name === 'return')   { document.getElementById('ret-msg').innerHTML = '';
-                             document.getElementById('ret-results').innerHTML = ''; }
+  if (name === 'log')    renderLog();
+  if (name === 'return') { document.getElementById('ret-msg').innerHTML = '';
+                           document.getElementById('ret-results').innerHTML = ''; }
   if (name === 'checkout') { document.getElementById('co-msg').innerHTML = '';
                              document.getElementById('co-results').innerHTML = ''; }
+  if (name === 'myres')  { document.getElementById('myres-msg').innerHTML = '';
+                           document.getElementById('myres-results').innerHTML = ''; }
   if (name === 'calendar') renderCalendar();
 }
 
@@ -1206,6 +1223,103 @@ function adminMarkReturned(id) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  MY RESERVATIONS FLOW
+// ─────────────────────────────────────────────────────────────────────────────
+async function persistCancelRecord(id) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'cancelRecord', id });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+function lookupMyRes() {
+  const email = document.getElementById('myres-email').value.trim().toLowerCase();
+  const msg   = document.getElementById('myres-msg');
+  const res   = document.getElementById('myres-results');
+  if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
+
+  const todayStr = tod();
+  const upcoming = records.filter(r =>
+    r.email === email &&
+    r.status === 'active' &&
+    r.date >= todayStr
+  ).sort((a, b) => a.date > b.date ? 1 : -1);
+
+  const past = records.filter(r =>
+    r.email === email &&
+    (r.status === 'returned' || r.status === 'checkedout' ||
+     (r.status === 'active' && r.date < todayStr))
+  ).sort((a, b) => a.date > b.date ? -1 : 1).slice(0, 5);
+
+  if (!upcoming.length && !past.length) {
+    msg.innerHTML = '<div class="msg msg-warn">No reservations found for that email.</div>';
+    res.innerHTML = '';
+    return;
+  }
+
+  msg.innerHTML = '';
+  let html = '';
+
+  if (upcoming.length) {
+    html += '<div class="section-lbl">Upcoming reservations</div>';
+    upcoming.forEach(r => {
+      const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+      html += `<div class="retitem" style="align-items:center">
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:15px">${names}</div>
+          <div style="font-size:14px;color:var(--text2);margin-top:2px">
+            ${fmtF(r.date)} · ${fmtSlot(r.slot)}
+            ${r.date === todayStr ? '<span style="color:var(--blue);font-weight:500"> · Today</span>' : ''}
+          </div>
+          ${r.purpose ? `<div style="font-size:13px;color:var(--text2);margin-top:2px">${r.purpose}</div>` : ''}
+        </div>
+        <button class="btn btn-sm" style="flex-shrink:0;color:var(--red-dk);border-color:var(--red)"
+          onclick="cancelReservation('${r.id}')">Cancel</button>
+      </div>`;
+    });
+  }
+
+  if (past.length) {
+    html += '<div class="section-lbl" style="margin-top:16px">Recent history</div>';
+    past.forEach(r => {
+      const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+      const st = getStatus(r);
+      const bc = st === 'checkedout' ? 'badge-checkedout' :
+                 st === 'overdue'    ? 'badge-overdue' : 'badge-returned';
+      html += `<div class="retitem" style="align-items:center">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span style="font-weight:600;font-size:15px">${names}</span>
+            <span class="badge ${bc}">${st}</span>
+          </div>
+          <div style="font-size:14px;color:var(--text2)">${fmtS(r.date)} · ${fmtSlot(r.slot)}</div>
+        </div>
+      </div>`;
+    });
+  }
+
+  res.innerHTML = html;
+}
+
+function cancelReservation(id) {
+  if (!confirm('Cancel this reservation? This cannot be undone.')) return;
+  const r = records.find(r => r.id === id);
+  if (!r) return;
+  r.status    = 'returned';
+  r.returnDate = tod();
+  r.condition  = 'Cancelled by student';
+  persistCancelRecord(id);
+  renderCalendar();
+  renderStats();
+  document.getElementById('myres-msg').innerHTML =
+    '<div class="msg msg-ok">Reservation cancelled successfully.</div>';
+  lookupMyRes();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  RETURN FLOW
 // ─────────────────────────────────────────────────────────────────────────────
 function buildCondHtml(recId) {
@@ -1237,7 +1351,7 @@ function lookupReturn() {
   const res   = document.getElementById('ret-results');
   if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
 
-  const active = records.filter(r => r.email === email && (r.status === 'checkedout' || r.status === 'active'));
+  const active = records.filter(r => r.email === email && r.status === 'checkedout');
   if (!active.length) {
     msg.innerHTML = '<div class="msg msg-warn">No active reservations found for that email.</div>';
     res.innerHTML = '';
@@ -1246,13 +1360,20 @@ function lookupReturn() {
   msg.innerHTML = '';
   let html = '<div class="section-lbl">Your active reservations</div>';
   active.forEach(r => {
-    const st    = getStatus(r);
-    const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+    const st     = getStatus(r);
+    const names  = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+    const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
+    const iphoneRow = r.status === 'checkedout'
+      ? (r.iphone
+          ? `<div style="font-size:14px;color:var(--blue);margin-top:5px;font-weight:500">⚠ Also return: ${iphones}</div>`
+          : `<div style="font-size:14px;color:var(--text2);margin-top:5px">No iPhone checked out</div>`)
+      : '';
     html += `<div class="retitem">
       <div style="flex:1">
-        <div style="font-weight:600;font-size:13px">${names}</div>
-        <div style="font-size:11px;color:${st === 'overdue' ? 'var(--red)' : 'var(--text2)'};margin-top:2px">
+        <div style="font-weight:600;font-size:15px">${names}</div>
+        <div style="font-size:14px;color:${st === 'overdue' ? 'var(--red)' : 'var(--text2)'};margin-top:2px">
           ${fmtS(r.date)} · ${fmtSlot(r.slot)}${st === 'overdue' ? ' — OVERDUE' : ''}</div>
+        ${iphoneRow}
         ${buildCondHtml(r.id)}
       </div>
       <button class="btn btn-primary btn-sm" style="flex-shrink:0;margin-top:2px"
