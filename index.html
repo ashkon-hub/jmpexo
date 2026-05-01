@@ -18,19 +18,19 @@
   --radius: 8px; --radius-sm: 5px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
-body { font-family: var(--font); font-size: 15px; color: var(--text);
+body { font-family: var(--font); font-size: 17px; color: var(--text);
   background: var(--bg2); min-height: 100vh; }
 .wrap { max-width: 860px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
 
 /* ── Setup Banner ── */
 #setup-banner { background: #fff3cd; border: 1px solid #ffc107; border-radius: var(--radius);
-  padding: 14px 16px; margin-bottom: 1.25rem; font-size: 13px; }
+  padding: 14px 16px; margin-bottom: 1.25rem; font-size: 17px; }
 #setup-banner strong { color: #856404; }
 #setup-banner code { background: rgba(0,0,0,0.07); padding: 1px 5px; border-radius: 3px;
-  font-family: monospace; font-size: 12px; }
+  font-family: monospace; font-size: 15px; }
 
 /* ── Loading ── */
-#loading { text-align: center; padding: 3rem; color: var(--text2); font-size: 13px; }
+#loading { text-align: center; padding: 3rem; color: var(--text2); font-size: 17px; }
 .spinner { width: 28px; height: 28px; border: 3px solid var(--bg3);
   border-top-color: var(--blue); border-radius: 50%; animation: spin 0.8s linear infinite;
   margin: 0 auto 12px; }
@@ -40,20 +40,20 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
 .app-header { display: flex; align-items: flex-start; justify-content: space-between;
   margin-bottom: 1rem; gap: 12px; flex-wrap: wrap; }
 .app-title { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.2; }
-.app-sub { font-size: 12px; color: var(--text2); margin-top: 3px; }
-#save-indicator { font-size: 11px; color: var(--text3); margin-top: 4px; min-height: 16px; }
+.app-sub { font-size: 15px; color: var(--text2); margin-top: 3px; }
+#save-indicator { font-size: 14px; color: var(--text3); margin-top: 4px; min-height: 16px; }
 
 /* ── Stat cards ── */
 .stat-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 1rem; }
 .stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 10px 8px; text-align: center; }
 .stat-n { font-size: 24px; font-weight: 600; }
-.stat-l { font-size: 10px; color: var(--text2); margin-top: 2px; line-height: 1.3; }
+.stat-l { font-size: 13px; color: var(--text2); margin-top: 2px; line-height: 1.3; }
 
 /* ── Nav tabs ── */
 .nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1rem; }
 .nav-btn { padding: 8px 16px; border: none; background: none; cursor: pointer;
-  font-size: 13px; color: var(--text2); border-bottom: 2px solid transparent;
+  font-size: 17px; color: var(--text2); border-bottom: 2px solid transparent;
   margin-bottom: -1px; font-family: var(--font); transition: color 0.12s; }
 .nav-btn.active { color: var(--text); border-bottom-color: var(--blue); font-weight: 500; }
 .nav-btn:hover:not(.active) { color: var(--text); }
@@ -66,9 +66,9 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
 .cal-controls { display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .cal-nav { display: flex; align-items: center; gap: 8px; }
-.month-lbl { font-size: 15px; font-weight: 600; min-width: 148px; text-align: center; }
+.month-lbl { font-size: 17px; font-weight: 600; min-width: 148px; text-align: center; }
 .week-hdrs { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; margin-bottom: 2px; }
-.week-hdr { text-align: center; font-size: 10px; color: var(--text3); font-weight: 600;
+.week-hdr { text-align: center; font-size: 13px; color: var(--text3); font-weight: 600;
   padding: 4px 0; }
 .cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
 .cal-cell { min-height: 66px; padding: 5px; border-radius: var(--radius-sm);
@@ -79,7 +79,7 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
 .cal-cell.past { opacity: 0.55; }
 .cal-cell.is-today { border-color: var(--blue); border-width: 1.5px; }
 .cal-cell.is-sel { background: var(--blue-lt); border-color: var(--blue); border-width: 1.5px; }
-.day-n { font-size: 11px; font-weight: 500; color: var(--text2); }
+.day-n { font-size: 14px; font-weight: 500; color: var(--text2); }
 .today-n { color: var(--blue); font-weight: 700; }
 .dev-bars { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; margin-top: 6px; }
 .split-bar { display: flex; height: 5px; border-radius: 2px; overflow: hidden; gap: 1px; }
@@ -94,7 +94,7 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
   border-radius: var(--radius); padding: 1rem 1.25rem; margin-top: 10px; }
 .panel-hdr { display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 12px; }
-.panel-title { font-size: 15px; font-weight: 600; }
+.panel-title { font-size: 17px; font-weight: 600; }
 .close-btn { background: none; border: none; cursor: pointer; color: var(--text2);
   font-size: 20px; line-height: 1; padding: 2px 6px; border-radius: 4px; }
 .close-btn:hover { background: var(--bg2); }
@@ -102,9 +102,9 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
   border-bottom: 1px solid var(--border); }
 .drow:last-of-type { border-bottom: none; }
 .dinf { flex: 1; min-width: 0; }
-.dnm { font-size: 13px; font-weight: 600; margin-bottom: 5px; }
+.dnm { font-size: 17px; font-weight: 600; margin-bottom: 5px; }
 .slots-row { display: flex; gap: 6px; flex-wrap: wrap; }
-.spill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.spill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 14px; font-weight: 500; }
 .spill-av { background: var(--bg3); color: var(--text2); }
 .spill-bo { background: var(--green-lt); color: var(--green-dk); }
 .spill-bl { background: var(--amber-lt); color: var(--amber-dk); }
@@ -114,13 +114,13 @@ body { font-family: var(--font); font-size: 15px; color: var(--text);
 .form-box { background: var(--bg2); border-radius: var(--radius);
   padding: 14px 16px; margin-top: 12px; }
 .form-box.curric { background: var(--amber-lt); border: 1px solid #fac775; }
-.form-title { font-size: 13px; font-weight: 600; margin-bottom: 10px; }
-label.fl { display: block; font-size: 12px; color: var(--text2); margin-bottom: 3px; margin-top: 10px; }
+.form-title { font-size: 17px; font-weight: 600; margin-bottom: 10px; }
+label.fl { display: block; font-size: 15px; color: var(--text2); margin-bottom: 3px; margin-top: 10px; }
 label.fl:first-of-type { margin-top: 0; }
 input[type=text], input[type=email], input[type=date], select, textarea {
   width: 100%; padding: 7px 10px; border: 1px solid var(--border2);
   border-radius: var(--radius-sm); background: var(--bg); color: var(--text);
-  font-size: 13px; font-family: var(--font); }
+  font-size: 17px; font-family: var(--font); }
 input:focus, select:focus, textarea:focus { outline: 2px solid var(--blue); outline-offset: -1px; }
 input[readonly] { background: var(--bg3); color: var(--text2); cursor: default; }
 textarea { min-height: 52px; resize: vertical; }
@@ -128,23 +128,23 @@ textarea { min-height: 52px; resize: vertical; }
 .slot-opts { display: flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .slot-opt { display: flex; align-items: center; gap: 5px; padding: 6px 12px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  cursor: pointer; font-size: 13px; background: var(--bg); user-select: none; }
+  cursor: pointer; font-size: 17px; background: var(--bg); user-select: none; }
 .slot-opt.sel { border-color: var(--blue); background: var(--blue-lt); font-weight: 500; }
 .slot-opt input { margin: 0; cursor: pointer; accent-color: var(--blue); }
 .cblbl { display: flex; align-items: center; gap: 8px; padding: 7px 9px;
   border: 1px solid var(--border); border-radius: var(--radius-sm);
-  margin-top: 4px; cursor: pointer; font-size: 13px; background: var(--bg); }
+  margin-top: 4px; cursor: pointer; font-size: 17px; background: var(--bg); }
 .cblbl.sel { border-color: var(--blue); background: var(--blue-lt); }
 .cblbl.dis { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
 .cblbl input { margin: 0; cursor: pointer; accent-color: var(--blue); }
 .cond-group { margin-top: 10px; }
-.cond-lbl { font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
+.cond-lbl { font-size: 15px; font-weight: 600; color: var(--text2); margin-bottom: 5px; }
 .cond-opt { display: flex; align-items: center; gap: 7px; padding: 5px 0;
-  cursor: pointer; font-size: 13px; }
+  cursor: pointer; font-size: 17px; }
 .cond-opt input { margin: 0; cursor: pointer; accent-color: var(--blue); }
 
 /* ── Buttons ── */
-.btn { padding: 7px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500;
+.btn { padding: 7px 14px; border-radius: var(--radius-sm); font-size: 17px; font-weight: 500;
   cursor: pointer; border: 1px solid var(--border2); background: var(--bg);
   color: var(--text); font-family: var(--font); white-space: nowrap; }
 .btn:hover { background: var(--bg2); }
@@ -153,13 +153,13 @@ textarea { min-height: 52px; resize: vertical; }
 .btn-primary:hover { opacity: 0.88; background: var(--blue); }
 .btn-amber { background: var(--amber-lt); color: var(--amber-dk); border-color: #fac775; }
 .btn-amber:hover { background: #fac775; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn-sm { padding: 4px 10px; font-size: 15px; }
 .btn-row { display: flex; gap: 7px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
 .admin-btn-wrap { display: flex; flex-direction: column; align-items: flex-end; }
-.admin-mode-badge { font-size: 10px; color: var(--amber-dk); margin-top: 3px; font-weight: 500; }
+.admin-mode-badge { font-size: 13px; color: var(--amber-dk); margin-top: 3px; font-weight: 500; }
 
 /* ── Messages ── */
-.msg { padding: 9px 13px; border-radius: var(--radius-sm); font-size: 13px; margin-bottom: 8px; }
+.msg { padding: 9px 13px; border-radius: var(--radius-sm); font-size: 17px; margin-bottom: 8px; }
 .msg-ok { background: var(--green-lt); color: var(--green-dk); border: 1px solid #c0dd97; }
 .msg-err { background: var(--red-lt); color: var(--red-dk); border: 1px solid #f7c1c1; }
 .msg-warn { background: var(--amber-lt); color: var(--amber-dk); border: 1px solid #fac775; }
@@ -173,13 +173,13 @@ textarea { min-height: 52px; resize: vertical; }
 /* ── Card ── */
 .card { background: var(--bg); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 1rem 1.25rem; margin-bottom: 10px; }
-.section-lbl { font-size: 11px; font-weight: 600; color: var(--text3);
+.section-lbl { font-size: 14px; font-weight: 600; color: var(--text3);
   text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
 
 /* ── Legend ── */
 .legend { display: flex; gap: 14px; margin-top: 10px; flex-wrap: wrap; }
 .legend-item { display: flex; align-items: center; gap: 5px;
-  font-size: 11px; color: var(--text2); }
+  font-size: 14px; color: var(--text2); }
 .legend-bar { width: 22px; height: 5px; border-radius: 2px; }
 
 /* ── Log / Records ── */
@@ -188,10 +188,10 @@ textarea { min-height: 52px; resize: vertical; }
 .logitem { padding: 9px 0; border-bottom: 1px solid var(--border);
   display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: start; }
 .logitem:last-child { border-bottom: none; }
-.dtag { display: inline-block; font-size: 11px; background: var(--bg2);
+.dtag { display: inline-block; font-size: 14px; background: var(--bg2);
   border: 1px solid var(--border); border-radius: 3px; padding: 1px 6px; margin: 1px; }
 .badge { display: inline-block; padding: 2px 7px; border-radius: 10px;
-  font-size: 11px; font-weight: 500; }
+  font-size: 14px; font-weight: 500; }
 .badge-active { background: var(--blue-lt); color: var(--blue); }
 .badge-checkedout { background: var(--green-lt); color: var(--green-dk); }
 .badge-overdue { background: var(--red-lt); color: var(--red-dk); }
@@ -221,7 +221,7 @@ textarea { min-height: 52px; resize: vertical; }
      CONFIGURATION  (edit before deploying)
      ════════════════════════════════════════════════ -->
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzaaT8Pef4gsvqVa2AI3KaYcFQz4V-YFHtZTP9K6NdDtgE_F2n6jonrZ0dSF4N3-X-E/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzWuoB7TpEE9zFxKEbrFj0SFlX5eWfrAUmOQF04DqZwmqH31q2cRCmcajZS1qbGWYbs/exec';
 const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </script>
 <!-- ════════════════════════════════════════════════ -->
@@ -300,7 +300,7 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
   <div class="card">
     <div class="section-lbl">Check out a device</div>
     <div id="co-msg"></div>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:12px">Enter the email address you used when making your reservation.</p>
+    <p style="font-size:15px;color:var(--text2);margin-bottom:12px">Enter the email address you used when making your reservation.</p>
     <label class="fl" style="margin-top:0">Your email address</label>
     <input type="email" id="co-email" placeholder="Email used when you made your reservation">
     <div class="btn-row">
@@ -317,12 +317,12 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
     <div class="charger-notice">
       <div class="charger-icon">⚡</div>
       <div>
-        <div style="font-size:13px;font-weight:600;color:#0C447C;margin-bottom:3px">
+        <div style="font-size:16px;font-weight:600;color:#0C447C;margin-bottom:3px">
           Place device in its charging dock before leaving
         </div>
-        <div style="font-size:12px;color:#185FA5">
-          After returning the Exo Iris unit, plug it into the dedicated charger
-          in the storage cabinet so it is ready for the next student.
+        <div style="font-size:15px;color:#185FA5">
+          After returning the Exo Iris device, plug it into the dedicated charger
+          in the storage closet so it is ready for the next student.
         </div>
       </div>
     </div>
@@ -478,10 +478,10 @@ async function persistAddRecord(rec) {
   }
 }
 
-async function persistCheckoutRecord(id) {
+async function persistCheckoutRecord(id, iphone) {
   setSaveIndicator('Saving…');
   try {
-    await apiPost({ action: 'checkoutRecord', id });
+    await apiPost({ action: 'checkoutRecord', id, iphone });
     setSaveIndicator('✓ Saved to Google Sheets');
   } catch (e) {
     setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
@@ -513,12 +513,23 @@ function lookupCheckout() {
   let html = '<div class="section-lbl">Your reservation for today</div>';
   eligible.forEach(r => {
     const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
-    html += `<div class="retitem">
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:13px">${names}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:2px">${fmtSlot(r.slot)}${r.purpose ? ' · ' + r.purpose : ''}</div>
+    const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
+    html += `<div class="retitem" style="flex-direction:column;align-items:flex-start;gap:10px">
+      <div>
+        <div style="font-weight:600;font-size:15px;margin-bottom:3px">${names}</div>
+        <div style="font-size:14px;color:var(--text2)">${fmtSlot(r.slot)}${r.purpose ? ' · ' + r.purpose : ''}</div>
       </div>
-      <button class="btn btn-primary btn-sm" style="flex-shrink:0"
+      <label style="display:flex;align-items:center;gap:10px;font-size:15px;cursor:pointer;
+        background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);
+        padding:10px 14px;width:100%">
+        <input type="checkbox" id="iphone-${r.id}" checked
+          style="width:18px;height:18px;cursor:pointer;accent-color:var(--blue);flex-shrink:0">
+        <div>
+          <div style="font-weight:500">Also checking out ${iphones}</div>
+          <div style="font-size:13px;color:var(--text2);margin-top:2px">Uncheck if you only need the Exo Iris probe</div>
+        </div>
+      </label>
+      <button class="btn btn-primary" style="width:100%"
         onclick="doCheckout('${r.id}')">Confirm pick-up</button>
     </div>`;
   });
@@ -528,13 +539,17 @@ function lookupCheckout() {
 function doCheckout(id) {
   const r = records.find(r => r.id === id);
   if (!r) return;
-  r.status = 'checkedout';
-  persistCheckoutRecord(id);
+  const iphoneChecked = document.getElementById('iphone-' + id)?.checked !== false;
+  r.status    = 'checkedout';
+  r.iphone    = iphoneChecked;
+  persistCheckoutRecord(id, iphoneChecked);
   renderCalendar();
   renderStats();
-  const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+  const names   = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+  const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
+  const iphoneNote = iphoneChecked ? ` + ${iphones}` : ' (probe only — no iPhone)';
   document.getElementById('co-msg').innerHTML = `
-    <div class="msg msg-ok"><strong>Checked out!</strong> ${names} · ${fmtSlot(r.slot)}.
+    <div class="msg msg-ok"><strong>Checked out!</strong> ${names}${iphoneNote} · ${fmtSlot(r.slot)}.
     Please return by end of your slot and complete the Return form when done.</div>`;
   document.getElementById('co-results').innerHTML = '';
 }
