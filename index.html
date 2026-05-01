@@ -686,8 +686,8 @@ function getSlotSt(devId, date, slot) {
     slotsConflict(r.slot, slot)
   );
   if (rec) {
-    const ov = rec.date < tod();
-    return { type: ov ? 'overdue' : 'booked', label: rec.studentName, id: rec.id };
+    const st = getStatus(rec);
+    return { type: st === 'overdue' ? 'overdue' : 'booked', label: rec.studentName, id: rec.id };
   }
   return { type: 'available' };
 }
