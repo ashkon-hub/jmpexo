@@ -221,7 +221,7 @@ textarea { min-height: 52px; resize: vertical; }
      CONFIGURATION  (edit before deploying)
      ════════════════════════════════════════════════ -->
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwIscnS-_Tf5oY29sNQxIOIIn7E2yJMOsXJ_1D2sz3xAZLY9R474ZMsYVb6t87jmcXe/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyufj5Mv6WSk96mcXqTAyaD4v5VcT8IpizsTyDiCUj2V46F0VblC-3OSuqaFR91aL16/exec';
 const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </script>
 <!-- ════════════════════════════════════════════════ -->
@@ -568,9 +568,15 @@ function doCheckout(id) {
   const names   = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
   const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
   const iphoneNote = iphoneChecked ? ` + ${iphones}` : ' (probe only — no iPhone)';
+  const now = new Date();
+  const dueHour = getDueTime(r);
+  const isPastDue = r.date === tod() && now.getHours() >= dueHour;
+  const dueMsg = isPastDue
+    ? '<strong>This device is already past its return time — please return it immediately.</strong>'
+    : 'Return by <strong>' + fmtDueTime(r) + '</strong>.';
   document.getElementById('co-msg').innerHTML = `
     <div class="msg msg-ok"><strong>Checked out!</strong> ${names}${iphoneNote} · ${fmtSlot(r.slot)}.
-    <strong>Return by ${fmtDueTime(r)}.</strong> Please use the Return Device tab to log your return.</div>`;
+    ${dueMsg} Please use the Return Device tab to log your return.</div>`;
   document.getElementById('co-results').innerHTML = '';
 }
 
@@ -1416,7 +1422,7 @@ function doReturn(id) {
       <strong>Return logged!</strong> ${names} returned. Condition: ${cond}.
       Remember to place the device in its charging dock — thank you!
     </div>`;
-  lookupReturn();
+  document.getElementById('ret-results').innerHTML = '';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
