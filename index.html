@@ -15,6 +15,7 @@
   --green: #648FFF; --green-lt: #e8eeff; --green-dk: #2b52cc;
   --amber: #FE6100; --amber-lt: #fff0e6; --amber-dk: #b34400;
   --red: #DC267F; --red-lt: #fce8f3; --red-dk: #9c1a59;
+  --oos: #1a1a1a; --oos-lt: #e8e8e8; --oos-dk: #000000;
   --radius: 8px; --radius-sm: 5px;
   --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
 }
@@ -88,6 +89,9 @@ body { font-family: var(--font); font-size: 17px; color: var(--text);
 .sh-bo { background: #648FFF; }
 .sh-bl { background: #FE6100; }
 .sh-ov { background: #DC267F; }
+.sh-oo { background: var(--oos); }
+.spill-oo { background: var(--oos-lt); color: var(--oos-dk); }
+.badge-oos { background: var(--oos-lt); color: var(--oos-dk); }
 
 /* ── Day Panel ── */
 .day-panel { background: var(--bg); border: 1px solid var(--border);
@@ -221,7 +225,7 @@ textarea { min-height: 52px; resize: vertical; }
      CONFIGURATION  (edit before deploying)
      ════════════════════════════════════════════════ -->
 <script>
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyufj5Mv6WSk96mcXqTAyaD4v5VcT8IpizsTyDiCUj2V46F0VblC-3OSuqaFR91aL16/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzTwhHJ4pmd17zO-qALWZdS-1zff_bzh6vMxAzcsUmofRner77GKChMlNfDkvEcA5Uo/exec';
 const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 </script>
 <!-- ════════════════════════════════════════════════ -->
@@ -291,6 +295,7 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
       <div class="legend-item"><div class="legend-bar" style="background:#648FFF"></div>Student reservation</div>
       <div class="legend-item"><div class="legend-bar" style="background:#FE6100"></div>Curricular session</div>
       <div class="legend-item"><div class="legend-bar" style="background:#DC267F"></div>Overdue</div>
+      <div class="legend-item"><div class="legend-bar" style="background:var(--oos)"></div>Out of service</div>
       <div class="legend-item" style="font-style:italic">Four device bars: left half = AM · right half = PM</div>
     </div>
   </div>
@@ -362,6 +367,7 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
       <option value="overdue">Overdue</option>
       <option value="returned">Returned</option>
       <option value="blocks">Curricular blocks</option>
+      <option value="oos">Out of service</option>
     </select>
   </div>
   <div class="card" style="padding:0.25rem 1.25rem">
@@ -399,6 +405,7 @@ const COND_OPTIONS = [
 // ─────────────────────────────────────────────────────────────────────────────
 let records   = [];
 let blocks    = [];
+let oosDevices = [];
 let adminMode = false;
 let selDate   = null;
 let curYear   = new Date().getFullYear();
@@ -466,9 +473,9 @@ async function loadData() {
   try {
     const data = await apiGet();
     if (data.success) {
-      records = data.records || [];
-      blocks  = data.blocks  || [];
-      // ensure deviceIds are arrays of numbers
+      records    = data.records    || [];
+      blocks     = data.blocks     || [];
+      oosDevices = data.oosDevices || [];
       records.forEach(r => {
         if (!Array.isArray(r.deviceIds))
           r.deviceIds = r.deviceIds ? String(r.deviceIds).split(',').map(Number) : [];
@@ -476,6 +483,10 @@ async function loadData() {
       blocks.forEach(b => {
         if (!Array.isArray(b.deviceIds))
           b.deviceIds = b.deviceIds ? String(b.deviceIds).split(',').map(Number) : [];
+      });
+      oosDevices.forEach(o => {
+        if (!Array.isArray(o.deviceIds))
+          o.deviceIds = o.deviceIds ? String(o.deviceIds).split(',').map(Number) : [];
       });
     }
   } catch (e) {
@@ -600,6 +611,26 @@ async function persistAddBlock(blk) {
   }
 }
 
+async function persistAddOOS(oos, affectedIds) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'addOOS', data: oos, affectedIds: affectedIds || [] });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
+async function persistRemoveOOS(id, affectedIds) {
+  setSaveIndicator('Saving…');
+  try {
+    await apiPost({ action: 'removeOOS', id, affectedIds: affectedIds || [] });
+    setSaveIndicator('✓ Saved to Google Sheets');
+  } catch (e) {
+    setSaveIndicator('⚠ Save failed — data shown locally only', 'var(--red-dk)');
+  }
+}
+
 async function persistRemoveBlock(id) {
   setSaveIndicator('Saving…');
   try {
@@ -689,6 +720,10 @@ function slotsConflict(s1, s2) {
 }
 
 function getSlotSt(devId, date, slot) {
+  // Out of service takes priority (only from startDate forward)
+  const oos = oosDevices.find(o => o.deviceIds.includes(devId) && (!o.startDate || date >= o.startDate));
+  if (oos) return { type: 'oos', label: oos.reason, id: oos.id };
+
   const bl = blocks.find(b =>
     b.deviceIds.includes(devId) &&
     b.startDate <= date && b.endDate >= date &&
@@ -719,13 +754,15 @@ function devAvailForSlot(devId, date, slotChoice) {
 function shClass(type) {
   return 'sh sh-' + (type === 'available' ? 'av' :
                      type === 'booked'    ? 'bo' :
-                     type === 'blocked'   ? 'bl' : 'ov');
+                     type === 'blocked'   ? 'bl' :
+                     type === 'oos'       ? 'oo' : 'ov');
 }
 
 function spillClass(type) {
   return 'spill spill-' + (type === 'available' ? 'av' :
                             type === 'booked'    ? 'bo' :
-                            type === 'blocked'   ? 'bl' : 'ov');
+                            type === 'blocked'   ? 'bl' :
+                            type === 'oos'       ? 'oo' : 'ov');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -897,6 +934,7 @@ function renderDayPanel() {
     function pill(st, slotLabel) {
       let text = slotLabel + ': ';
       if (st.type === 'available') text += 'Available';
+      else if (st.type === 'oos')     text += 'Out of service — ' + st.label;
       else if (st.type === 'booked')  text += st.label + ' (due ' + (slotLabel === 'Morning' ? '12:00 PM' : '6:00 PM') + ')';
       else if (st.type === 'blocked') text += st.label;
       else text += 'Overdue (' + st.label + ')';
@@ -937,6 +975,9 @@ function renderDayPanel() {
     if (adminMode)
       html += `<button class="btn btn-amber btn-sm" onclick="openBlockForm()">
         Add curricular block →</button>`;
+    if (adminMode)
+      html += `<button class="btn btn-sm" style="background:var(--oos);color:#fff;border-color:var(--oos)" onclick="openOOSForm()">
+        Mark device out of service →</button>`;
     if (!hasAvail && !adminMode)
       html += `<span style="font-size:12px;color:var(--text2)">All slots are booked or blocked.</span>`;
     html += `</div>`;
@@ -1228,6 +1269,110 @@ function removeBlockAction(id) {
   renderDayPanel();
 }
 
+function openOOSForm() {
+  const cbHtml = DEVICES.map(dev => {
+    const alreadyOOS = oosDevices.find(o => o.deviceIds.includes(dev.id));
+    return `<label class="cblbl${alreadyOOS ? ' dis' : ''}" id="oosl-${dev.id}">
+      <input type="checkbox" value="${dev.id}" ${alreadyOOS ? 'disabled' : ''}
+        onchange="this.closest('label').classList.toggle('sel',this.checked);showOOSConflicts()">
+      <div><div style="font-size:15px;font-weight:500">${dev.name}</div>
+      ${alreadyOOS ? `<div style="font-size:13px;color:var(--text2)">Already out of service: ${alreadyOOS.reason}</div>` : ''}
+      </div>
+    </label>`;
+  }).join('');
+  document.getElementById('panel-form').innerHTML = `
+    <div class="form-box" style="background:var(--oos-lt);border:1px solid #aaaaaa">
+      <div class="form-title">Mark device out of service</div>
+      <div id="oos-msg"></div>
+      <label class="fl" style="margin-top:0">Reason *</label>
+      <input type="text" id="oos-reason" placeholder="e.g. Screen damage — sent for repair">
+      <label class="fl">Device(s) *</label>
+      ${cbHtml}
+      <div id="oos-conflicts" style="margin-top:10px"></div>
+      <div class="btn-row">
+        <button class="btn btn-sm" style="background:var(--oos);color:#fff;border-color:var(--oos)"
+          onclick="submitOOS()">Mark out of service</button>
+        <button class="btn" onclick="cancelForm()">Cancel</button>
+      </div>
+    </div>`;
+  document.getElementById('panel-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function showOOSConflicts() {
+  const sel = [...document.querySelectorAll('[id^="oosl-"] input:checked')].map(i => parseInt(i.value));
+  const container = document.getElementById('oos-conflicts');
+  if (!sel.length) { container.innerHTML = ''; return; }
+  const todayStr = tod();
+  const affected = records.filter(r =>
+    r.status === 'active' &&
+    r.date >= todayStr &&
+    r.deviceIds.some(id => sel.includes(Number(id)))
+  );
+  if (!affected.length) { container.innerHTML = '<div style="font-size:13px;color:var(--green-dk)">✓ No upcoming reservations affected.</div>'; return; }
+  const list = affected.map(r => {
+    const names = r.deviceIds.filter(id => sel.includes(Number(id))).map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+    return `<div style="margin:3px 0;font-size:13px">• ${r.studentName} (${r.email}) — ${names} · ${fmtS(r.date)} · ${fmtSlot(r.slot)}</div>`;
+  }).join('');
+  container.innerHTML = `
+    <div class="msg mwarn" style="background:var(--amber-lt);border:0.5px solid #fac775;border-radius:5px;padding:10px 12px">
+      <div style="font-weight:600;margin-bottom:6px">⚠ ${affected.length} upcoming reservation(s) will be affected:</div>
+      ${list}
+      <div style="margin-top:8px;font-size:13px">These students will be notified when you mark the device out of service.</div>
+    </div>`;
+}
+
+function submitOOS() {
+  const reason = document.getElementById('oos-reason')?.value.trim();
+  const sel    = [...document.querySelectorAll('[id^="oosl-"] input:checked')].map(i => parseInt(i.value));
+  const msg    = document.getElementById('oos-msg');
+  if (!reason || !sel.length) {
+    msg.innerHTML = '<div class="msg msg-err">Please enter a reason and select at least one device.</div>';
+    return;
+  }
+  const todayStr = tod();
+  const oos = { id: 'oos-' + Date.now(), deviceIds: sel, reason, startDate: todayStr, createdAt: new Date().toISOString() };
+
+  // Find affected reservations to notify
+  const affected = records.filter(r =>
+    r.status === 'active' &&
+    r.date >= todayStr &&
+    r.deviceIds.some(id => sel.includes(Number(id)))
+  );
+  const affectedIds = affected.map(r => r.id);
+
+  oosDevices.push(oos);
+  persistAddOOS(oos, affectedIds);
+  renderCalendar();
+  renderStats();
+  const names = sel.map(id => DEVICES.find(d => d.id === id).name).join(', ');
+  const notifyMsg = affected.length
+    ? `<div style="margin-top:6px;font-size:13px">${affected.length} student(s) have been notified by email.</div>` : '';
+  document.getElementById('panel-form').innerHTML = `
+    <div class="msg msg-err" style="margin-top:10px">
+      <strong>Marked out of service.</strong> ${names} — ${reason}${notifyMsg}
+    </div>`;
+  renderDayPanel();
+}
+
+function restoreDevice(id) {
+  const oos = oosDevices.find(o => o.id === id);
+  if (!oos) return;
+
+  // Find reservations that were blocked by this OOS
+  const todayStr = tod();
+  const affected = records.filter(r =>
+    r.status === 'active' &&
+    r.date >= todayStr &&
+    r.deviceIds.some(devId => oos.deviceIds.includes(Number(devId)))
+  );
+
+  oosDevices = oosDevices.filter(o => o.id !== id);
+  persistRemoveOOS(id, affected.map(r => r.id));
+  renderCalendar();
+  renderStats();
+  renderLog();
+}
+
 function adminMarkReturned(id) {
   const r = records.find(r => r.id === id);
   if (!r) return;
@@ -1434,12 +1579,16 @@ function renderLog() {
 
   if (filter === 'blocks') {
     items = blocks.map(b => ({ type: 'block', data: b, ts: b.createdAt }));
+  } else if (filter === 'oos') {
+    items = oosDevices.map(o => ({ type: 'oos', data: o, ts: o.createdAt }));
   } else {
     const recs = records
       .filter(r => filter === 'all' || getStatus(r) === filter)
       .map(r => ({ type: 'rec', data: r, ts: r.createdAt }));
     items = filter === 'all'
-      ? [...recs, ...blocks.map(b => ({ type: 'block', data: b, ts: b.createdAt }))]
+      ? [...recs,
+         ...blocks.map(b => ({ type: 'block', data: b, ts: b.createdAt })),
+         ...oosDevices.map(o => ({ type: 'oos', data: o, ts: o.createdAt }))]
           .sort((a, b) => b.ts > a.ts ? 1 : -1)
       : recs;
   }
@@ -1451,7 +1600,25 @@ function renderLog() {
   }
 
   list.innerHTML = items.map(item => {
-    if (item.type === 'block') {
+    if (item.type === 'oos') {
+      const o = item.data;
+      const names = o.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name || '').filter(Boolean);
+      const rm = adminMode
+        ? `<button class="btn btn-sm" onclick="restoreDevice('${o.id}');renderLog()">Restore</button>` : '';
+      return `<div class="logitem">
+        <div>
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+            <span style="font-weight:600;font-size:13px">${o.reason}</span>
+            <span class="badge badge-oos">out of service</span>
+          </div>
+          <div>${names.map(n => `<span class="dtag">${n}</span>`).join('')}</div>
+        </div>
+        <div style="text-align:right;font-size:11px;color:var(--text2)">
+          <div>Since ${fmtS(o.createdAt.slice(0,10))}</div>
+          <div style="margin-top:6px">${rm}</div>
+        </div>
+      </div>`;
+    } else if (item.type === 'block') {
       const b = item.data;
       const names = b.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name || '').filter(Boolean);
       const rm = adminMode
