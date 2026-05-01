@@ -550,7 +550,7 @@ function doCheckout(id) {
   const iphoneNote = iphoneChecked ? ` + ${iphones}` : ' (probe only — no iPhone)';
   document.getElementById('co-msg').innerHTML = `
     <div class="msg msg-ok"><strong>Checked out!</strong> ${names}${iphoneNote} · ${fmtSlot(r.slot)}.
-    Please return by end of your slot and complete the Return form when done.</div>`;
+    Please return the device by end of your time slot and use the Return Device tab to log your return.</div>`;
   document.getElementById('co-results').innerHTML = '';
 }
 
