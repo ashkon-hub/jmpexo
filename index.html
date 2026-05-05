@@ -258,8 +258,6 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
 <div class="nav">
   <button class="nav-btn active" onclick="showView('calendar')">Reservation Calendar</button>
   <button class="nav-btn" onclick="showView('myres')">My Reservations</button>
-  <button class="nav-btn" onclick="showView('checkout')">Check Out Device</button>
-  <button class="nav-btn" onclick="showView('return')">Return Device</button>
   <button class="nav-btn" id="records-tab" onclick="showView('log')" style="display:none">Records</button>
 </div>
 
@@ -283,6 +281,9 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
   </div>
 
   <div id="cal-wrap" style="display:none">
+    <div style="background:var(--blue-lt);border:1px solid #b0cce8;border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:10px;font-size:14px">
+      <strong>New to JMP POCUS Reservations?</strong> Check device availability on the <strong>Reservation Calendar</strong> and click on any date to reserve a device. Use the <strong>My Reservations</strong> tab to <strong>check out</strong> your device when you pick it up, <strong>return</strong> it when you're done, or cancel an upcoming reservation.
+    </div>
     <div class="week-hdrs">
       <div class="week-hdr">Sun</div><div class="week-hdr">Mon</div><div class="week-hdr">Tue</div>
       <div class="week-hdr">Wed</div><div class="week-hdr">Thu</div><div class="week-hdr">Fri</div>
@@ -301,21 +302,6 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
   </div>
 </div>
 
-<!-- ── CHECKOUT VIEW ── -->
-<div id="view-checkout" class="view">
-  <div class="card">
-    <div class="section-lbl">Check out a device</div>
-    <div id="co-msg"></div>
-    <p style="font-size:15px;color:var(--text2);margin-bottom:12px">Enter the email address you used when making your reservation.</p>
-    <label class="fl" style="margin-top:0">Your email address</label>
-    <input type="email" id="co-email" placeholder="Email used when you made your reservation">
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="lookupCheckout()">Find my reservation →</button>
-    </div>
-    <div id="co-results" style="margin-top:12px"></div>
-  </div>
-</div>
-
 <!-- ── MY RESERVATIONS VIEW ── -->
 <div id="view-myres" class="view">
   <div class="card">
@@ -327,32 +313,6 @@ const ADMIN_PASSWORD  = 'pocus-admin';  // ← Change this password!
       <button class="btn btn-primary" onclick="lookupMyRes()">Look up my reservations →</button>
     </div>
     <div id="myres-results" style="margin-top:12px"></div>
-  </div>
-</div>
-
-<!-- ── RETURN VIEW ── -->
-<div id="view-return" class="view">
-  <div class="card">
-    <div class="section-lbl">Return a device</div>
-    <div class="charger-notice">
-      <div class="charger-icon">⚡</div>
-      <div>
-        <div style="font-size:16px;font-weight:600;color:#0C447C;margin-bottom:3px">
-          Place device in its charging dock before leaving
-        </div>
-        <div style="font-size:16px;color:#185FA5">
-          After returning the Exo Iris device, plug it into the dedicated charger
-          in the storage closet<br>so it is ready for the next student.
-        </div>
-      </div>
-    </div>
-    <div id="ret-msg"></div>
-    <label class="fl" style="margin-top:0">Your email address</label>
-    <input type="email" id="ret-email" placeholder="Email used when you made your reservation">
-    <div class="btn-row">
-      <button class="btn btn-primary" onclick="lookupReturn()">Find my reservations →</button>
-    </div>
-    <div id="ret-results" style="margin-top:12px"></div>
   </div>
 </div>
 
@@ -571,8 +531,8 @@ function doCheckout(id) {
   const r = records.find(r => r.id === id);
   if (!r) return;
   const iphoneChecked = document.getElementById('iphone-' + id)?.checked !== false;
-  r.status    = 'checkedout';
-  r.iphone    = iphoneChecked;
+  r.status  = 'checkedout';
+  r.iphone  = iphoneChecked;
   persistCheckoutRecord(id, iphoneChecked);
   renderCalendar();
   renderStats();
@@ -580,15 +540,14 @@ function doCheckout(id) {
   const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
   const iphoneNote = iphoneChecked ? ` + ${iphones}` : ' (probe only — no iPhone)';
   const now = new Date();
-  const dueHour = getDueTime(r);
-  const isPastDue = r.date === tod() && now.getHours() >= dueHour;
+  const isPastDue = r.date === tod() && now.getHours() >= getDueTime(r);
   const dueMsg = isPastDue
     ? '<strong>This device is already past its return time — please return it immediately.</strong>'
-    : 'Return by <strong>' + fmtDueTime(r) + '</strong>.';
-  document.getElementById('co-msg').innerHTML = `
+    : `Return by <strong>${fmtDueTime(r)}</strong>.`;
+  document.getElementById('myres-msg').innerHTML = `
     <div class="msg msg-ok"><strong>Checked out!</strong> ${names}${iphoneNote} · ${fmtSlot(r.slot)}.
-    ${dueMsg} Please use the Return Device tab to log your return.</div>`;
-  document.getElementById('co-results').innerHTML = '';
+    ${dueMsg} Use the Return section below to log your return.</div>`;
+  lookupMyRes();
 }
 
 async function persistReturnRecord(id, returnDate, condition) {
@@ -676,14 +635,10 @@ function showView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('view-' + name).classList.add('active');
-  ['calendar', 'myres', 'checkout', 'return', 'log'].forEach((n, i) => {
+  ['calendar', 'myres', 'log'].forEach((n, i) => {
     if (n === name) document.querySelectorAll('.nav-btn')[i].classList.add('active');
   });
   if (name === 'log')    renderLog();
-  if (name === 'return') { document.getElementById('ret-msg').innerHTML = '';
-                           document.getElementById('ret-results').innerHTML = ''; }
-  if (name === 'checkout') { document.getElementById('co-msg').innerHTML = '';
-                             document.getElementById('co-results').innerHTML = ''; }
   if (name === 'myres')  { document.getElementById('myres-msg').innerHTML = '';
                            document.getElementById('myres-results').innerHTML = ''; }
   if (name === 'calendar') renderCalendar();
@@ -1405,19 +1360,27 @@ function lookupMyRes() {
   if (!email) { msg.innerHTML = '<div class="msg msg-err">Please enter your email.</div>'; return; }
 
   const todayStr = tod();
+
+  // Today's active reservations — show Check Out button
+  const todayActive = records.filter(r =>
+    r.email === email && r.status === 'active' && r.date === todayStr);
+
+  // Checked out — show Return section
+  const checkedOut = records.filter(r =>
+    r.email === email && r.status === 'checkedout');
+
+  // Future reservations — show Cancel button
   const upcoming = records.filter(r =>
-    r.email === email &&
-    r.status === 'active' &&
-    r.date >= todayStr
+    r.email === email && r.status === 'active' && r.date > todayStr
   ).sort((a, b) => a.date > b.date ? 1 : -1);
 
+  // Recent history
   const past = records.filter(r =>
     r.email === email &&
-    (r.status === 'returned' || r.status === 'checkedout' ||
-     (r.status === 'active' && r.date < todayStr))
+    (r.status === 'returned' || (r.status === 'active' && r.date < todayStr))
   ).sort((a, b) => a.date > b.date ? -1 : 1).slice(0, 5);
 
-  if (!upcoming.length && !past.length) {
+  if (!todayActive.length && !checkedOut.length && !upcoming.length && !past.length) {
     msg.innerHTML = '<div class="msg msg-warn">No reservations found for that email.</div>';
     res.innerHTML = '';
     return;
@@ -1426,17 +1389,76 @@ function lookupMyRes() {
   msg.innerHTML = '';
   let html = '';
 
+  // ── CHECKED OUT — return section with charger notice ──
+  if (checkedOut.length) {
+    html += `<div class="charger-notice" style="margin-bottom:12px">
+      <div style="font-size:20px;line-height:1;flex-shrink:0;margin-top:1px">⚡</div>
+      <div>
+        <div style="font-size:16px;font-weight:600;color:#0C447C;margin-bottom:3px">Place device in its charging dock before leaving</div>
+        <div style="font-size:15px;color:#185FA5">After returning the Exo Iris device, plug it into the dedicated charger in the storage closet<br>so it is ready for the next student.</div>
+      </div>
+    </div>`;
+    html += '<div class="section-lbl">Checked out — ready to return</div>';
+    checkedOut.forEach(r => {
+      const st = getStatus(r);
+      const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+      const iphones = r.iphone ? ' + ' + r.deviceIds.map(id => `iPhone ${id}`).join(', ') : '';
+      const iphoneReturnNote = r.iphone
+        ? `<div style="font-size:14px;color:var(--blue);margin-top:4px;font-weight:500">⚠ Also return: ${r.deviceIds.map(id => `iPhone ${id}`).join(', ')}</div>` : '';
+      html += `<div class="retitem" style="flex-direction:column;align-items:flex-start;gap:10px;padding:14px 0">
+        <div style="width:100%">
+          <div style="font-weight:600;font-size:15px">${names}${iphones}</div>
+          <div style="font-size:14px;color:${st==='overdue'?'var(--red)':'var(--text2)'};margin-top:2px">
+            ${fmtS(r.date)} · ${fmtSlot(r.slot)}${st==='overdue'?' — OVERDUE':''}
+          </div>
+          ${iphoneReturnNote}
+          ${buildCondHtml(r.id)}
+        </div>
+        <button class="btn btn-primary" style="width:100%" onclick="doReturn('${r.id}')">Log return</button>
+      </div>`;
+    });
+  }
+
+  // ── TODAY'S RESERVATIONS — check out ──
+  if (todayActive.length) {
+    html += '<div class="section-lbl" style="margin-top:14px">Ready to pick up today</div>';
+    todayActive.forEach(r => {
+      const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
+      const iphones = r.deviceIds.map(id => `iPhone ${id}`).join(', ');
+      html += `<div class="retitem" style="flex-direction:column;align-items:flex-start;gap:10px;padding:14px 0">
+        <div style="width:100%">
+          <div style="font-weight:600;font-size:15px">${names}</div>
+          <div style="font-size:14px;color:var(--text2);margin-top:2px">${fmtSlot(r.slot)} · <strong>Due by ${fmtDueTime(r)}</strong></div>
+          ${r.purpose ? `<div style="font-size:13px;color:var(--text2);margin-top:2px">${r.purpose}</div>` : ''}
+          <label style="display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer;
+            background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);
+            padding:8px 12px;margin-top:8px">
+            <input type="checkbox" id="iphone-${r.id}" checked
+              style="width:16px;height:16px;cursor:pointer;accent-color:var(--blue);flex-shrink:0">
+            <div>
+              <div style="font-weight:500">Also checking out ${iphones}</div>
+              <div style="font-size:12px;color:var(--text2);margin-top:1px">Uncheck if you only need the Exo Iris probe</div>
+            </div>
+          </label>
+        </div>
+        <div style="display:flex;gap:8px;width:100%">
+          <button class="btn btn-primary" style="flex:1" onclick="doCheckout('${r.id}')">Confirm pick-up</button>
+          <button class="btn btn-sm" style="color:var(--red-dk);border-color:var(--red)"
+            onclick="cancelReservation('${r.id}')">Cancel</button>
+        </div>
+      </div>`;
+    });
+  }
+
+  // ── UPCOMING — cancel ──
   if (upcoming.length) {
-    html += '<div class="section-lbl">Upcoming reservations</div>';
+    html += '<div class="section-lbl" style="margin-top:14px">Upcoming reservations</div>';
     upcoming.forEach(r => {
       const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
       html += `<div class="retitem" style="align-items:center">
         <div style="flex:1">
           <div style="font-weight:600;font-size:15px">${names}</div>
-          <div style="font-size:14px;color:var(--text2);margin-top:2px">
-            ${fmtF(r.date)} · ${fmtSlot(r.slot)} · <strong>Due by ${fmtDueTime(r)}</strong>
-            ${r.date === todayStr ? '<span style="color:var(--blue);font-weight:500"> · Today</span>' : ''}
-          </div>
+          <div style="font-size:14px;color:var(--text2);margin-top:2px">${fmtF(r.date)} · ${fmtSlot(r.slot)} · <strong>Due by ${fmtDueTime(r)}</strong></div>
           ${r.purpose ? `<div style="font-size:13px;color:var(--text2);margin-top:2px">${r.purpose}</div>` : ''}
         </div>
         <button class="btn btn-sm" style="flex-shrink:0;color:var(--red-dk);border-color:var(--red)"
@@ -1445,13 +1467,13 @@ function lookupMyRes() {
     });
   }
 
+  // ── RECENT HISTORY ──
   if (past.length) {
-    html += '<div class="section-lbl" style="margin-top:16px">Recent history</div>';
+    html += '<div class="section-lbl" style="margin-top:14px">Recent history</div>';
     past.forEach(r => {
       const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
       const st = getStatus(r);
-      const bc = st === 'checkedout' ? 'badge-checkedout' :
-                 st === 'overdue'    ? 'badge-overdue' : 'badge-returned';
+      const bc = st === 'checkedout' ? 'badge-checkedout' : st === 'overdue' ? 'badge-overdue' : 'badge-returned';
       html += `<div class="retitem" style="align-items:center">
         <div style="flex:1">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
@@ -1465,6 +1487,7 @@ function lookupMyRes() {
   }
 
   res.innerHTML = html;
+  checkedOut.forEach(r => watchCond(r.id));
 }
 
 function cancelReservation(id) {
@@ -1562,12 +1585,10 @@ function doReturn(id) {
   renderStats();
 
   const names = r.deviceIds.map(id => DEVICES.find(d => d.id === id)?.name).join(', ');
-  document.getElementById('ret-msg').innerHTML = `
-    <div class="msg msg-ok">
-      <strong>Return logged!</strong> ${names} returned. Condition: ${cond}.
-      Remember to place the device in its charging dock — thank you!
-    </div>`;
-  document.getElementById('ret-results').innerHTML = '';
+  document.getElementById('myres-msg').innerHTML = `
+    <div class="msg msg-ok"><strong>Return logged!</strong> ${names} returned. Condition: ${cond}.
+    Remember to place the device in its charging dock — thank you!</div>`;
+  lookupMyRes();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
